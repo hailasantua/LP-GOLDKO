@@ -11,6 +11,8 @@ export type Database = {
       leads_onboarding: {
         Row: {
           created_at: string;
+          email: string | null;
+          empresa_nome: string | null;
           id: string;
           interesse_empresa: string[] | null;
           interesse_nutri: string[] | null;
@@ -20,10 +22,12 @@ export type Database = {
           status: string;
           tipo: string;
           utm_source: string | null;
-          whatsapp: string;
+          whatsapp: string | null;
         };
         Insert: {
           created_at?: string;
+          email?: string | null;
+          empresa_nome?: string | null;
           id?: string;
           interesse_empresa?: string[] | null;
           interesse_nutri?: string[] | null;
@@ -33,10 +37,12 @@ export type Database = {
           status?: string;
           tipo: string;
           utm_source?: string | null;
-          whatsapp: string;
+          whatsapp?: string | null;
         };
         Update: {
           created_at?: string;
+          email?: string | null;
+          empresa_nome?: string | null;
           id?: string;
           interesse_empresa?: string[] | null;
           interesse_nutri?: string[] | null;
@@ -46,7 +52,7 @@ export type Database = {
           status?: string;
           tipo?: string;
           utm_source?: string | null;
-          whatsapp?: string;
+          whatsapp?: string | null;
         };
         Relationships: [];
       };

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Send, ChevronRight, Check, Loader2, FileText, ExternalLink } from "lucide-react";
+import { Send, ChevronRight, Check, Loader2, FileText, ExternalLink, MessageCircle } from "lucide-react";
 import { CloseButton, GoldkoAvatar } from "@/components/goldko-sheet";
 import { createChatLeadServerFn } from "@/lib/chat-leads.functions";
 import { trackEvent } from "@/lib/tracking";
@@ -15,12 +15,14 @@ interface ChatMessage {
   resourceLinks?: { label: string; href: string }[];
 }
 
-type Step = "welcome" | "segment" | "client_menu" | "name" | "phone" | "q1" | "q2" | "done";
+type Step = "welcome" | "segment" | "client_menu" | "company" | "name" | "phone" | "q1" | "q2" | "done";
 
 interface LeadData {
   segment: Segment | null;
   name: string;
+  company: string;
   phone: string;
+  email: string;
   qty: string;
   interests: string[];
 }
@@ -141,6 +143,22 @@ function botMsg(text: string, extra?: Partial<ChatMessage>): ChatMessage {
 function userMsg(text: string): ChatMessage {
   return { id: mkId(), from: "user", text };
 }
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+/** Empresa pode responder com WhatsApp ou e-mail; os outros perfis só com WhatsApp. */
+function parseContact(raw: string, allowEmail: boolean): { phone: string; email: string } | null {
+  const value = raw.trim();
+  if (allowEmail && value.includes("@")) {
+    return EMAIL_RE.test(value) ? { phone: "", email: value.toLowerCase() } : null;
+  }
+  const digits = value.replace(/\D/g, "");
+  return digits.length >= 10 && digits.length <= 13 ? { phone: digits, email: "" } : null;
+}
+
+function contactLabel(lead: { phone: string; email: string }) {
+  return lead.phone ? `WhatsApp **${formatPhone(lead.phone)}**` : `e-mail **${lead.email}**`;
+}
+
 function formatPhone(digits: string): string {
   if (digits.length === 11) return `(${digits.slice(0, 2)}) ${digits[2]} ${digits.slice(3, 7)}-${digits.slice(7)}`;
   if (digits.length === 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
@@ -270,8 +288,9 @@ export function ChatLead({
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [step, setStep] = useState<Step>("welcome");
-  const [lead, setLead] = useState<LeadData>({ segment: null, name: "", phone: "", qty: "", interests: [] });
+  const [lead, setLead] = useState<LeadData>({ segment: null, name: "", company: "", phone: "", email: "", qty: "", interests: [] });
   const [inputValue, setInputValue] = useState("");
+  const [contactError, setContactError] = useState("");
   const [typing, setTyping] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedOk, setSavedOk] = useState(false);
@@ -337,7 +356,7 @@ export function ChatLead({
   }, [open]);
 
   useEffect(() => {
-    if (["name", "phone", "q1"].includes(step)) {
+    if (["company", "name", "phone", "q1"].includes(step)) {
       setTimeout(() => inputRef.current?.focus(), 350);
     }
   }, [step]);
@@ -363,6 +382,7 @@ export function ChatLead({
     if (!open) return;
     setMessages([]);
     setInputValue("");
+    setContactError("");
     setSelectedChips([]);
     setLastChipMsgId(null);
     setSavedOk(false);
@@ -373,7 +393,7 @@ export function ChatLead({
 
     if (initialSegment) {
       // Segmento pré-selecionado (ex: clicou no card Clube do Nutri ou Empresas)
-      setLead({ segment: initialSegment, name: "", phone: "", qty: "", interests: [] });
+      setLead({ segment: initialSegment, name: "", company: "", phone: "", email: "", qty: "", interests: [] });
       setStep("welcome");
       const info = SEGMENT_GREETINGS[initialSegment];
       setTimeout(() => {
@@ -385,11 +405,15 @@ export function ChatLead({
           );
           return;
         }
+        if (initialSegment === "empresa") {
+          pushBot(`${info.title}\n${info.subtitle}\n\nPara começarmos, qual é o nome da sua **empresa**?`, {}, "company");
+          return;
+        }
         pushBot(`${info.title}\n${info.subtitle}\n\nPara começarmos, qual é o seu **nome**?`, {}, "name");
       }, 350);
     } else {
       // Nenhum segmento pré-selecionado (ex: clicou no botão geral da Hero ou Header)
-      setLead({ segment: null, name: "", phone: "", qty: "", interests: [] });
+      setLead({ segment: null, name: "", company: "", phone: "", email: "", qty: "", interests: [] });
       setStep("welcome");
       setTimeout(() => {
         pushBot(
@@ -423,6 +447,10 @@ export function ChatLead({
         return;
       }
       pushBot(`${greeting.title}\n${greeting.subtitle}`);
+      if (seg === "empresa") {
+        setTimeout(() => pushBot("Para começarmos, qual é o nome da sua **empresa**?", {}, "company"), 1400);
+        return;
+      }
       setTimeout(() => pushBot("Qual é o seu **nome**?", {}, "name"), 1400);
     },
     [addUserMsg, onClose, onOpenCustomerMenu, pushBot]
@@ -472,18 +500,43 @@ export function ChatLead({
       addUserMsg(name.trim());
       setLead((prev) => ({ ...prev, name: name.trim() }));
       setInputValue("");
-      pushBot(`Prazer, **${name.trim()}**!\nAgora preciso do seu **WhatsApp** (com DDD) para contato:`, {}, "phone");
+      const contactAsk =
+        lead.segment === "empresa"
+          ? "Agora preciso do seu **WhatsApp** (com DDD) para contato ou do seu **e-mail**, o que preferir:"
+          : "Agora preciso do seu **WhatsApp** (com DDD) para contato:";
+      pushBot(`Prazer, **${name.trim()}**!\n${contactAsk}`, {}, "phone");
+    },
+    [addUserMsg, lead.segment, pushBot]
+  );
+
+  const handleCompanySubmit = useCallback(
+    (company: string) => {
+      if (company.trim().length < 2) return;
+      addUserMsg(company.trim());
+      setLead((prev) => ({ ...prev, company: company.trim() }));
+      setInputValue("");
+      pushBot(`Ótimo, anotado: **${company.trim()}**.\nE qual é o seu **nome**?`, {}, "name");
     },
     [addUserMsg, pushBot]
   );
 
   const handlePhoneSubmit = useCallback(
-    (phone: string) => {
-      const cleaned = phone.replace(/\D/g, "");
-      if (cleaned.length < 8 || !lead.segment) return;
-      addUserMsg(formatPhone(cleaned));
+    (raw: string) => {
+      if (!lead.segment) return;
+      const allowEmail = lead.segment === "empresa";
+      const contact = parseContact(raw, allowEmail);
+      if (!contact) {
+        setContactError(
+          allowEmail
+            ? "Digite um WhatsApp com DDD, como (64) 99999-9999, ou um e-mail válido."
+            : "Digite um WhatsApp com DDD, como (64) 99999-9999.",
+        );
+        return;
+      }
+      setContactError("");
+      addUserMsg(contact.phone ? formatPhone(contact.phone) : contact.email);
       setInputValue("");
-      setLead((prev) => ({ ...prev, phone: cleaned }));
+      setLead((prev) => ({ ...prev, phone: contact.phone, email: contact.email }));
       const q = SEGMENT_QUESTIONS[lead.segment];
       pushBot(
         q.q1,
@@ -524,7 +577,9 @@ export function ChatLead({
       await createChatLeadServerFn({
         data: {
           nome: finalLead.name,
-          whatsapp: finalLead.phone,
+          empresa: finalLead.company || undefined,
+          whatsapp: finalLead.phone || undefined,
+          email: finalLead.email || undefined,
           tipo: finalLead.segment!,
           quantidade: finalLead.qty,
           interesses: finalLead.interests,
@@ -536,9 +591,7 @@ export function ChatLead({
       setTimeout(
         () =>
           pushBot(
-            `Tudo certo, **${finalLead.name}**!\nNossa equipe já recebeu suas informações e vai entrar em contato com você pelo WhatsApp **${formatPhone(
-              finalLead.phone
-            )}**.${resourceLinks.length > 0 ? "\n\nOs materiais que você selecionou estão disponíveis abaixo:" : ""}\n\nObrigado pela preferência!`,
+            `Tudo certo, **${finalLead.name}**!\nNossa equipe já recebeu suas informações e vai entrar em contato com você pelo ${contactLabel(finalLead)}.${resourceLinks.length > 0 ? "\n\nOs materiais que você selecionou estão disponíveis abaixo:" : ""}\n\nObrigado pela preferência!`,
             resourceLinks.length > 0 ? { resourceLinks } : undefined,
           ),
         1000
@@ -596,22 +649,41 @@ export function ChatLead({
   const handleTextSubmit = useCallback(() => {
     const val = inputValue.trim();
     if (!val) return;
-    if (step === "name") handleNameSubmit(val);
+    if (step === "company") handleCompanySubmit(val);
+    else if (step === "name") handleNameSubmit(val);
     else if (step === "phone") handlePhoneSubmit(val);
     else if (step === "q1") handleQ1Submit(val);
-  }, [inputValue, step, handleNameSubmit, handlePhoneSubmit, handleQ1Submit]);
+  }, [inputValue, step, handleCompanySubmit, handleNameSubmit, handlePhoneSubmit, handleQ1Submit]);
 
   if (!open) return null;
 
-  const progressByStep: Partial<Record<Step, number>> = { name: 20, phone: 45, q1: 70, q2: 90, done: 100 };
+  const progressByStep: Partial<Record<Step, number>> = { company: 12, name: 28, phone: 48, q1: 70, q2: 90, done: 100 };
   const progress = progressByStep[step] ?? 0;
-  const showTextInput = ["name", "phone", "q1"].includes(step);
+  const companyInterestLabels = lead.interests
+    .map((value) => SEGMENT_QUESTIONS.empresa.q2Options.find((option) => option.value === value)?.label || value)
+    .join(", ");
+  const companyWhatsAppHref = `${STORE_WHATSAPP}?text=${encodeURIComponent(
+    [
+      `Olá! Sou ${lead.name || "um representante"}${lead.company ? `, da empresa ${lead.company}` : ""}.`,
+      "Acabei de me cadastrar no site da GoldKo e tenho interesse no atendimento para empresas.",
+      companyInterestLabels ? `Interesses: ${companyInterestLabels}.` : "",
+      lead.qty ? `Número de colaboradores: ${lead.qty}.` : "",
+    ]
+      .filter(Boolean)
+      .join("\n"),
+  )}`;
+  const showTextInput = ["company", "name", "phone", "q1"].includes(step);
   const showMultiConfirm = step === "q2";
+  const contactAllowsEmail = step === "phone" && lead.segment === "empresa";
   const inputPlaceholder =
-    step === "name"
+    step === "company"
+      ? "Nome da empresa"
+      : step === "name"
       ? "Digite seu nome completo…"
       : step === "phone"
-      ? "Ex: (64) 99999-9999"
+      ? contactAllowsEmail
+        ? "(64) 99999-9999 ou voce@empresa.com.br"
+        : "Ex: (64) 99999-9999"
       : lead.segment
       ? SEGMENT_QUESTIONS[lead.segment].q1Placeholder
       : "Digite sua resposta…";
@@ -717,13 +789,33 @@ export function ChatLead({
           {typing && <TypingIndicator />}
           {step === "done" && savedOk && !typing && (
             <div className="flex justify-center gap-3 pt-3 animate-in fade-in slide-in-from-bottom-3 duration-300">
-              <a
-                href="#descubra"
-                onClick={onClose}
-                className="inline-flex items-center gap-2 rounded-full bg-[#00205C] px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#003380]"
-              >
-                Conhecer produtos <ChevronRight className="size-4" />
-              </a>
+              {lead.segment === "empresa" ? (
+                <a
+                  href={companyWhatsAppHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => {
+                    void trackEvent("chat_whatsapp_click", {
+                      section: "chat_lead",
+                      source: trackingSource,
+                      segment: "empresa",
+                      label: "Falar no WhatsApp",
+                      destination: STORE_WHATSAPP,
+                    });
+                  }}
+                  className="inline-flex items-center gap-2 rounded-full bg-[#00205C] px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#003380]"
+                >
+                  <MessageCircle className="size-4" /> Falar no WhatsApp
+                </a>
+              ) : (
+                <a
+                  href="#descubra"
+                  onClick={onClose}
+                  className="inline-flex items-center gap-2 rounded-full bg-[#00205C] px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#003380]"
+                >
+                  Conhecer produtos <ChevronRight className="size-4" />
+                </a>
+              )}
               <button
                 onClick={onClose}
                 className="inline-flex items-center gap-2 rounded-full border border-[#E6E1D8] bg-white px-5 py-2.5 text-sm font-bold text-[#00205C]/70 transition-colors hover:border-[#00205C]/40"
@@ -740,6 +832,7 @@ export function ChatLead({
         {(showTextInput || showMultiConfirm) && (
           <div className="relative z-10 shrink-0 border-t border-[#EDE6DA] bg-white px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             {showTextInput ? (
+              <>
               <form
                 className="flex items-center gap-2"
                 onSubmit={(e) => {
@@ -750,7 +843,10 @@ export function ChatLead({
                 <input
                   ref={inputRef}
                   value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
+                  onChange={(e) => {
+                    setInputValue(e.target.value);
+                    if (contactError) setContactError("");
+                  }}
                   onFocus={() => {
                     requestAnimationFrame(() =>
                       bottomRef.current?.scrollIntoView({ behavior: "auto", block: "end" }),
@@ -759,8 +855,8 @@ export function ChatLead({
                   placeholder={inputPlaceholder}
                   className="flex-1 rounded-full border border-[#E6E1D8] bg-[#FFFBF5] px-4 py-2.5 text-base text-[#00205C] outline-none transition-colors placeholder:text-[#00205C]/40 focus:border-[#42C8E5] focus:bg-white focus:ring-2 focus:ring-[#42C8E5]/20 sm:text-sm"
                   style={{ fontSize: "16px" }}
-                  autoComplete={step === "phone" ? "tel" : "name"}
-                  inputMode={step === "phone" || step === "q1" ? "numeric" : "text"}
+                  autoComplete={step === "company" ? "organization" : step === "phone" ? (contactAllowsEmail ? "on" : "tel") : "name"}
+                  inputMode={contactAllowsEmail ? "email" : step === "phone" || step === "q1" ? "numeric" : "text"}
                 />
                 <button
                   type="submit"
@@ -770,6 +866,8 @@ export function ChatLead({
                   <Send className="size-4" />
                 </button>
               </form>
+              {contactError && <p role="alert" className="px-2 pt-2 text-xs font-medium text-red-600">{contactError}</p>}
+              </>
             ) : (
               <div className="flex items-center justify-between gap-3">
                 <p className="text-xs font-medium text-[#4A5672]">
