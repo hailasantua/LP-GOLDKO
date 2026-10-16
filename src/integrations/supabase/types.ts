@@ -17,6 +17,7 @@ export type Database = {
           interesse_empresa: string[] | null;
           interesse_nutri: string[] | null;
           nome: string;
+          observacoes: string | null;
           qtd_colaboradores: string | null;
           qtd_pacientes: string | null;
           status: string;
@@ -32,6 +33,7 @@ export type Database = {
           interesse_empresa?: string[] | null;
           interesse_nutri?: string[] | null;
           nome: string;
+          observacoes?: string | null;
           qtd_colaboradores?: string | null;
           qtd_pacientes?: string | null;
           status?: string;
@@ -47,6 +49,7 @@ export type Database = {
           interesse_empresa?: string[] | null;
           interesse_nutri?: string[] | null;
           nome?: string;
+          observacoes?: string | null;
           qtd_colaboradores?: string | null;
           qtd_pacientes?: string | null;
           status?: string;

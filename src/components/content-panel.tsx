@@ -113,6 +113,7 @@ function contentWithoutDeviceVersions(content: SiteContent): SiteContent {
   return version as SiteContent;
 }
 import { JourneyAnalytics } from "./journey-analytics";
+import { LeadsPanel } from "./leads-panel";
 
 function isAdmin(user: User | null) {
   return user?.app_metadata?.["role"] === "admin" || user?.email === "goldkorv@gmail.com";
@@ -179,10 +180,11 @@ export function ContentPanel() {
   });
 
   // Aba ativa no painel administrativo.
-  const [adminTab, setAdminTab] = useState<"pages" | "journey">(() => {
+  const [adminTab, setAdminTab] = useState<"pages" | "journey" | "leads">(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       if (params.get("tab") === "journey") return "journey";
+      if (params.get("tab") === "leads") return "leads";
     }
     return "pages";
   });
@@ -738,6 +740,11 @@ export function ContentPanel() {
               >Jornada</button>
               <button
                 type="button"
+                onClick={() => { setAdminTab("leads"); window.history.pushState(null, "", "/painel?tab=leads"); }}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 sm:px-4 py-1.5 text-xs font-bold transition ${adminTab === "leads" ? "bg-[#42C8E5] text-[#00205C] shadow-xs" : "text-gray-500 hover:text-gray-900"}`}
+              >Leads</button>
+              <button
+                type="button"
                 onClick={() => {
                   setAdminTab("pages");
                   if (typeof window !== "undefined") {
@@ -786,6 +793,8 @@ export function ContentPanel() {
         <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 md:py-12 lg:px-8">
           {adminTab === "journey" ? (
             <JourneyAnalytics />
+          ) : adminTab === "leads" ? (
+            <LeadsPanel />
           ) : (
             <>
               {/* Cabeçalho da Seção */}

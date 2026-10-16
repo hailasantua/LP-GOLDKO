@@ -12,3 +12,7 @@ alter table public.leads_onboarding
 alter table public.leads_onboarding
   add constraint leads_onboarding_contato_check
   check (whatsapp is not null or email is not null);
+
+-- Painel de leads: anotações da equipe sobre cada contato.
+alter table public.leads_onboarding
+  add column if not exists observacoes text;
