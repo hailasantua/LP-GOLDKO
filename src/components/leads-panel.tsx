@@ -1,13 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  AlignLeft,
-  Building2,
-  CheckSquare,
-  Clock,
+  CheckCircle2,
   Download,
   Loader2,
   Mail,
   MessageCircle,
+  Pencil,
   Plus,
   RefreshCw,
   Search,
@@ -450,7 +448,7 @@ export function LeadsPanel() {
         </div>
       )}
 
-      {/* COLUNAS */}
+      {/* COLUNAS (ESTILO ASANA) */}
       <div className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden">
         <div className="flex h-full items-start gap-4 p-4 md:gap-5 md:p-6">
           {columns.map(({ status, title, cards }) => (
@@ -468,167 +466,199 @@ export function LeadsPanel() {
                 event.preventDefault();
                 dropOn(status);
               }}
-              className={`flex max-h-full min-w-[300px] flex-1 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-[#EFF1F4] transition ${
-                overColumn === status && dragId ? "ring-2 ring-[#42C8E5]" : ""
-              }`}
+              className="flex max-h-full min-w-[300px] flex-1 flex-col gap-2"
             >
-              <div className={`h-1 shrink-0 ${SEGMENT_TOP_STRIP[status]}`} />
-              <header className="flex items-center gap-2 px-4 pb-2.5 pt-3.5">
-                <h2 className="flex-1 text-xs font-bold uppercase tracking-wide text-[#00205C]">
-                  {title}
-                </h2>
-                <span className="rounded-full bg-white px-2 py-0.5 text-xs font-bold text-gray-500">
-                  {cards.length}
-                </span>
+              <header className="flex shrink-0 items-center gap-2.5 rounded-xl border border-gray-200 bg-white px-4 py-3">
+                <span className={`size-2.5 rounded-sm ${SEGMENT_TOP_STRIP[status]}`} />
+                <h2 className="text-base font-semibold text-[#00205C]">{title}</h2>
+                <span className="text-base text-gray-400">{cards.length}</span>
               </header>
 
-              <div className="min-h-[8px] flex-1 space-y-2 overflow-y-auto px-2 pb-1">
-                {loading && leads.length === 0 && status === "cliente" && (
-                  <div className="flex items-center gap-2 px-2 py-3 text-sm text-gray-500">
-                    <Loader2 className="size-4 animate-spin" /> Carregando…
-                  </div>
-                )}
-                {cards.map((lead) => {
-                  const contact = contactOf(lead);
-                  const tipo = normalizeTipo(lead.tipo);
-                  const stage = statusOf(lead);
-                  const interests = interestsOf(lead);
-                  return (
-                    <article
-                      key={lead.id}
-                      draggable
-                      onDragStart={(event) => {
-                        event.dataTransfer.effectAllowed = "move";
-                        event.dataTransfer.setData("text/plain", lead.id);
-                        setDragId(lead.id);
-                      }}
-                      onDragEnd={() => {
-                        setDragId(null);
-                        setOverColumn(null);
-                      }}
-                      onClick={() => setOpenId(lead.id)}
-                      className={`group cursor-pointer rounded-xl border border-gray-200 bg-white px-3 pb-2.5 pt-2.5 shadow-sm transition hover:border-[#42C8E5] hover:shadow-md ${
-                        dragId === lead.id ? "rotate-2 opacity-50" : ""
-                      } ${savingId === lead.id ? "opacity-70" : ""}`}
-                    >
-                      <div className="mb-1.5 flex gap-1">
-                        <span
-                          className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-bold ${STATUS_META[stage].chip}`}
-                        >
-                          <span className={`size-1.5 rounded-full ${STATUS_META[stage].dot}`} />
-                          {STATUS_META[stage].label}
-                        </span>
-                      </div>
-                      <p className="text-sm font-bold leading-snug text-[#00205C]">{lead.nome}</p>
-                      {lead.empresa_nome && (
-                        <p className="mt-0.5 flex items-center gap-1 text-xs text-gray-500">
-                          <Building2 className="size-3" /> {lead.empresa_nome}
-                        </p>
-                      )}
-                      <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-gray-500">
-                        <span
-                          className="inline-flex items-center gap-1"
-                          title={dateFormatter.format(new Date(lead.created_at))}
-                        >
-                          <Clock className="size-3.5" />{" "}
-                          {shortDate.format(new Date(lead.created_at)).replace(".", "")}
-                        </span>
-                        {contact.phone && (
-                          <span
-                            className="inline-flex items-center gap-1"
-                            title={formatPhone(contact.phone)}
-                          >
-                            <MessageCircle className="size-3.5" />
-                          </span>
-                        )}
-                        {contact.email && (
-                          <span className="inline-flex items-center gap-1" title={contact.email}>
-                            <Mail className="size-3.5" />
-                          </span>
-                        )}
-                        {lead.observacoes && (
-                          <span className="inline-flex items-center gap-1" title="Tem anotações">
-                            <AlignLeft className="size-3.5" />
-                          </span>
-                        )}
-                        {interests.length > 0 && (
-                          <span
-                            className="inline-flex items-center gap-1"
-                            title={interests.join(", ")}
-                          >
-                            <CheckSquare className="size-3.5" /> {interests.length}
-                          </span>
-                        )}
-                        {quantityOf(lead) && <span className="truncate">{quantityOf(lead)}</span>}
-                      </div>
-                    </article>
-                  );
-                })}
-
-                {!loading && cards.length === 0 && composer !== status && (
-                  <div className="rounded-xl border-[1.5px] border-dashed border-gray-300 px-3 py-6 text-center text-xs font-medium text-gray-400">
-                    {statusFilter === "todos"
-                      ? "Nenhum lead ainda"
-                      : `Nenhum lead ${STATUS_META[statusFilter].label.toLowerCase()} aqui`}
-                  </div>
-                )}
-                {composer === status && (
-                  <form
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      void createCard(status);
-                    }}
-                  >
-                    <textarea
-                      autoFocus
-                      value={composerText}
-                      onChange={(event) => setComposerText(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" && !event.shiftKey) {
-                          event.preventDefault();
-                          void createCard(status);
-                        }
-                        if (event.key === "Escape") setComposer(null);
-                      }}
-                      rows={2}
-                      placeholder="Nome do lead"
-                      className="w-full resize-none rounded-xl border border-[#42C8E5] bg-white px-3 py-2 text-sm text-[#00205C] shadow-sm outline-none ring-2 ring-[#42C8E5]/20 placeholder:text-gray-400"
-                    />
-                    <div className="mt-1.5 flex items-center gap-1">
-                      <button
-                        type="submit"
-                        disabled={creating}
-                        className="rounded-full bg-[#00205C] px-4 py-1.5 text-sm font-bold text-white hover:bg-[#003380] disabled:opacity-60"
-                      >
-                        {creating ? "Adicionando…" : "Adicionar cartão"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setComposer(null)}
-                        aria-label="Cancelar"
-                        className="flex size-8 items-center justify-center rounded-full text-gray-500 hover:bg-gray-200"
-                      >
-                        <X className="size-5" />
-                      </button>
+              <div
+                className={`flex min-h-0 flex-col rounded-xl border border-gray-200 bg-[#EFF1F4] p-2.5 transition ${
+                  overColumn === status && dragId ? "ring-2 ring-[#42C8E5]" : ""
+                }`}
+              >
+                <div className="min-h-0 space-y-2.5 overflow-y-auto">
+                  {loading && leads.length === 0 && status === "cliente" && (
+                    <div className="flex items-center gap-2 px-2 py-3 text-sm text-gray-500">
+                      <Loader2 className="size-4 animate-spin" /> Carregando…
                     </div>
-                  </form>
-                )}
-              </div>
+                  )}
+                  {cards.map((lead) => {
+                    const contact = contactOf(lead);
+                    const stage = statusOf(lead);
+                    const done = stage === "convertido";
+                    const overdue =
+                      stage === "novo" &&
+                      Date.now() - new Date(lead.created_at).getTime() > 2 * 86400000;
+                    return (
+                      <article
+                        key={lead.id}
+                        draggable
+                        onDragStart={(event) => {
+                          event.dataTransfer.effectAllowed = "move";
+                          event.dataTransfer.setData("text/plain", lead.id);
+                          setDragId(lead.id);
+                        }}
+                        onDragEnd={() => {
+                          setDragId(null);
+                          setOverColumn(null);
+                        }}
+                        onClick={() => setOpenId(lead.id)}
+                        className={`group relative cursor-pointer rounded-xl border border-gray-200 bg-white p-4 transition hover:border-gray-300 hover:shadow-md ${
+                          dragId === lead.id ? "rotate-2 opacity-50" : ""
+                        } ${savingId === lead.id ? "opacity-70" : ""}`}
+                      >
+                        <button
+                          type="button"
+                          aria-label="Editar lead"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setOpenId(lead.id);
+                          }}
+                          className="absolute right-3 top-3 flex size-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 opacity-0 transition hover:text-[#00205C] group-hover:opacity-100 focus-visible:opacity-100"
+                        >
+                          <Pencil className="size-4" />
+                        </button>
 
-              {composer !== status && (
-                <div className="flex items-center gap-1 p-2">
+                        <div className="flex items-start gap-2 pr-8">
+                          <button
+                            type="button"
+                            aria-label={done ? "Voltar para Novo" : "Marcar como convertido"}
+                            title={done ? "Convertido" : "Marcar como convertido"}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              void saveLead(
+                                lead.id,
+                                { status: done ? "novo" : "convertido" },
+                                true,
+                              );
+                            }}
+                            className={`mt-0.5 shrink-0 rounded-full transition ${
+                              done ? "text-emerald-600" : "text-gray-400 hover:text-emerald-600"
+                            }`}
+                          >
+                            <CheckCircle2 className="size-5" />
+                          </button>
+                          <div className="min-w-0">
+                            <p
+                              className={`text-[15px] font-medium leading-snug text-[#00205C] ${done ? "text-gray-500" : ""}`}
+                            >
+                              {lead.nome}
+                            </p>
+                            {lead.empresa_nome && (
+                              <p className="mt-0.5 truncate text-sm text-gray-500">
+                                {lead.empresa_nome}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          <span className="inline-flex items-center gap-2 rounded-md bg-gray-100 px-2 py-1 text-sm text-[#00205C]">
+                            <span className={`size-3.5 rounded ${COLUMN_ACCENT[stage]}`} />
+                            {STATUS_META[stage].label}
+                          </span>
+                        </div>
+
+                        <div className="mt-3 flex items-center justify-between gap-2">
+                          <span
+                            className={`text-sm ${overdue ? "text-[#E8604C]" : "text-gray-500"}`}
+                            title={
+                              overdue
+                                ? "Lead novo há mais de 2 dias sem contato"
+                                : dateFormatter.format(new Date(lead.created_at))
+                            }
+                          >
+                            {shortDate
+                              .format(new Date(lead.created_at))
+                              .replace(".", "")
+                              .replace(" de ", " ")}
+                          </span>
+                          <span className="flex items-center gap-2 text-gray-400">
+                            {contact.phone && (
+                              <MessageCircle
+                                className="size-4"
+                                aria-label={formatPhone(contact.phone)}
+                              />
+                            )}
+                            {contact.email && (
+                              <Mail className="size-4" aria-label={contact.email} />
+                            )}
+                          </span>
+                        </div>
+                      </article>
+                    );
+                  })}
+
+                  {!loading && cards.length === 0 && composer !== status && (
+                    <div className="rounded-xl border-[1.5px] border-dashed border-gray-300 px-3 py-6 text-center text-sm text-gray-400">
+                      {statusFilter === "todos"
+                        ? "Nenhum lead ainda"
+                        : `Nenhum lead ${STATUS_META[statusFilter].label.toLowerCase()} aqui`}
+                    </div>
+                  )}
+
+                  {composer === status && (
+                    <form
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        void createCard(status);
+                      }}
+                      className="rounded-xl border border-[#42C8E5] bg-white p-3 ring-2 ring-[#42C8E5]/20"
+                    >
+                      <div className="flex items-start gap-2">
+                        <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-gray-300" />
+                        <textarea
+                          autoFocus
+                          value={composerText}
+                          onChange={(event) => setComposerText(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" && !event.shiftKey) {
+                              event.preventDefault();
+                              void createCard(status);
+                            }
+                            if (event.key === "Escape") setComposer(null);
+                          }}
+                          rows={2}
+                          placeholder="Nome do lead"
+                          className="w-full resize-none bg-transparent text-[15px] text-[#00205C] outline-none placeholder:text-gray-400"
+                        />
+                      </div>
+                      <div className="mt-2 flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setComposer(null)}
+                          className="rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-500 hover:bg-gray-100"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={creating}
+                          className="rounded-lg bg-[#00205C] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#003380] disabled:opacity-60"
+                        >
+                          {creating ? "Adicionando…" : "Adicionar"}
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+
+                {composer !== status && (
                   <button
                     type="button"
                     onClick={() => {
                       setComposer(status);
                       setComposerText("");
                     }}
-                    className="flex flex-1 items-center gap-2 rounded-xl px-2 py-1.5 text-sm font-semibold text-gray-500 transition hover:bg-white hover:text-[#00205C]"
+                    className="mt-1.5 flex items-center gap-2 rounded-lg px-3 py-2.5 text-[15px] font-medium text-gray-500 transition hover:bg-white/70 hover:text-[#00205C]"
                   >
-                    <Plus className="size-4" /> Adicionar um cartão
+                    <Plus className="size-4" /> Adicionar um lead
                   </button>
-                </div>
-              )}
+                )}
+              </div>
             </section>
           ))}
           <div className="w-1 shrink-0" />
