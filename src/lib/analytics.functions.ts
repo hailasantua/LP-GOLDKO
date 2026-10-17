@@ -21,15 +21,37 @@ export const recordAnalyticsEvent = createServerFn({ method: "POST" })
   });
 
 export const getAnalyticsEvents = createServerFn({ method: "POST" })
-  .validator((data) => z.object({ accessToken: z.string().min(20) }).parse(data))
+  .validator((data) =>
+    z.object({ accessToken: z.string().min(20), days: z.number().int().min(1).max(365).default(30) }).parse(data),
+  )
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: authData, error: authError } = await supabaseAdmin.auth.getUser(data.accessToken);
     const user = authData.user;
-    if (authError || !user || (user.app_metadata?.role !== "admin" && user.email !== "goldkorv@gmail.com")) throw new Error("Acesso não autorizado.");
-    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    if (authError || !user || (user.app_metadata?.["role"] !== "admin" && user.email !== "goldkorv@gmail.com")) throw new Error("Acesso não autorizado.");
+    // Busca o período escolhido + o período anterior, para a comparação no painel.
+    const since = new Date(Date.now() - 2 * data.days * 24 * 60 * 60 * 1000).toISOString();
+
+    // O Supabase devolve no máximo 1.000 linhas por consulta: lê em páginas.
+    async function fetchAllEvents() {
+      const pageSize = 1000;
+      const rows: AnalyticsEventRow[] = [];
+      for (let from = 0; from < 100000; from += pageSize) {
+        const { data: page, error } = await supabaseAdmin
+          .from("analytics_events" as never)
+          .select("*")
+          .gte("created_at", since)
+          .order("created_at", { ascending: false })
+          .range(from, from + pageSize - 1);
+        if (error) return { data: rows, error };
+        rows.push(...((page || []) as AnalyticsEventRow[]));
+        if (!page || page.length < pageSize) break;
+      }
+      return { data: rows, error: null };
+    }
+
     const [eventsResult, onboardingResult, contactResult] = await Promise.all([
-      supabaseAdmin.from("analytics_events").select("*").gte("created_at", since).order("created_at", { ascending: false }).limit(20000),
+      fetchAllEvents(),
       supabaseAdmin.from("leads_onboarding").select("created_at,tipo").gte("created_at", since),
       supabaseAdmin.from("leads").select("created_at,interest,message").gte("created_at", since),
     ]);
