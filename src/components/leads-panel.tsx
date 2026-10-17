@@ -102,17 +102,17 @@ async function getToken() {
 }
 
 const SEGMENT_LABEL_COLOR: Record<string, { bar: string; name: string }> = {
-  cliente: { bar: "bg-[#4BCE97]", name: "Cliente" },
-  empresa: { bar: "bg-[#579DFF]", name: "Empresa" },
-  clube_nutri: { bar: "bg-[#9F8FEF]", name: "Clube Nutri" },
+  cliente: { bar: "bg-[#42C8E5]", name: "Cliente" },
+  empresa: { bar: "bg-[#00205C]", name: "Empresa" },
+  clube_nutri: { bar: "bg-[#ff8515]", name: "Clube Nutri" },
 };
 
 const COLUMN_ACCENT: Record<LeadStatus, string> = {
   novo: "bg-[#42C8E5]",
-  contatado: "bg-[#F5CD47]",
-  qualificado: "bg-[#9F8FEF]",
-  convertido: "bg-[#4BCE97]",
-  perdido: "bg-[#8C9BAB]",
+  contatado: "bg-amber-500",
+  qualificado: "bg-violet-500",
+  convertido: "bg-emerald-600",
+  perdido: "bg-gray-400",
 };
 
 const shortDate = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" });
@@ -281,21 +281,18 @@ export function LeadsPanel() {
   const openLead = leads.find((lead) => lead.id === openId) || null;
 
   return (
-    <div
-      className="flex h-[calc(100dvh-4rem)] flex-col overflow-hidden"
-      style={{ background: "linear-gradient(135deg, #00205C 0%, #0B4A8B 45%, #42C8E5 100%)" }}
-    >
+    <div className="flex h-[calc(100dvh-4rem)] flex-col overflow-hidden bg-[#F8F8F8]">
       {/* BARRA DO QUADRO */}
-      <div className="flex shrink-0 flex-wrap items-center gap-2 bg-black/25 px-4 py-2.5 text-white backdrop-blur-sm md:px-5">
-        <h1 className="mr-1 rounded-md px-2 py-1 text-lg font-bold">Leads</h1>
+      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-gray-200 bg-white px-4 py-2.5 md:px-6">
+        <h1 className="mr-2 font-display text-xl font-bold uppercase tracking-wide text-[#00205C]">Leads</h1>
         <div className="flex items-center gap-1">
           {SEGMENTS.map((item) => (
             <button
               key={item.value}
               type="button"
               onClick={() => setSegment(item.value)}
-              className={`rounded-md px-2.5 py-1.5 text-sm font-semibold transition ${
-                segment === item.value ? "bg-white text-[#00205C]" : "text-white/90 hover:bg-white/20"
+              className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition ${
+                segment === item.value ? "bg-[#00205C] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
               }`}
             >
               {item.label}
@@ -304,22 +301,22 @@ export function LeadsPanel() {
         </div>
         <div className="ml-auto flex items-center gap-2">
           <label className="relative hidden sm:block">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-white/70" />
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Buscar cartões"
-              className="w-56 rounded-md border border-white/25 bg-white/15 py-1.5 pl-8 pr-3 text-sm text-white outline-none placeholder:text-white/60 focus:bg-white focus:text-[#172B4D] focus:placeholder:text-gray-400"
+              className="w-60 rounded-full border border-gray-200 bg-gray-50 py-2 pl-10 pr-4 text-sm outline-none focus:border-[#42C8E5] focus:bg-white"
             />
           </label>
-          <button type="button" onClick={() => void load()} title="Atualizar" className="flex size-8 items-center justify-center rounded-md hover:bg-white/20">
+          <button type="button" onClick={() => void load()} title="Atualizar" className="flex size-9 items-center justify-center rounded-full border border-gray-200 bg-white text-[#00205C] transition hover:bg-gray-50">
             <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
           </button>
           <button
             type="button"
             onClick={exportCsv}
             disabled={visible.length === 0}
-            className="inline-flex items-center gap-1.5 rounded-md bg-white px-3 py-1.5 text-sm font-bold text-[#00205C] transition hover:bg-white/90 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-full bg-[#00205C] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#003380] disabled:opacity-40"
           >
             <Download className="size-4" /> Exportar
           </button>
@@ -350,19 +347,19 @@ export function LeadsPanel() {
                 event.preventDefault();
                 dropOn(status);
               }}
-              className={`flex max-h-full w-[272px] shrink-0 flex-col rounded-xl bg-[#101204] text-[#B6C2CF] shadow-md transition ${
+              className={`flex max-h-full w-[280px] shrink-0 flex-col rounded-2xl border border-gray-200 bg-[#EFF1F4] transition ${
                 overColumn === status && dragId ? "ring-2 ring-[#42C8E5]" : ""
               }`}
             >
               <header className="flex items-center gap-2 px-3 pb-2 pt-3">
                 <span className={`h-2 w-2 rounded-full ${COLUMN_ACCENT[status]}`} />
-                <h2 className="flex-1 text-sm font-bold uppercase tracking-wide text-[#DEE4EA]">{STATUS_META[status].label}</h2>
-                <span className="text-sm text-[#9FADBC]">{cards.length}</span>
+                <h2 className="flex-1 text-xs font-bold uppercase tracking-wide text-[#00205C]">{STATUS_META[status].label}</h2>
+                <span className="rounded-full bg-white px-2 py-0.5 text-xs font-bold text-gray-500">{cards.length}</span>
               </header>
 
               <div className="min-h-[8px] flex-1 space-y-2 overflow-y-auto px-2 pb-1">
                 {loading && leads.length === 0 && status === "novo" && (
-                  <div className="flex items-center gap-2 px-2 py-3 text-sm text-[#9FADBC]">
+                  <div className="flex items-center gap-2 px-2 py-3 text-sm text-gray-500">
                     <Loader2 className="size-4 animate-spin" /> Carregando…
                   </div>
                 )}
@@ -385,7 +382,7 @@ export function LeadsPanel() {
                         setOverColumn(null);
                       }}
                       onClick={() => setOpenId(lead.id)}
-                      className={`group cursor-pointer rounded-lg bg-[#22272B] px-3 pb-2 pt-2.5 shadow-[0_1px_1px_#091E4240] ring-[#85B8FF] transition hover:ring-2 ${
+                      className={`group cursor-pointer rounded-xl border border-gray-200 bg-white px-3 pb-2.5 pt-2.5 shadow-sm transition hover:border-[#42C8E5] hover:shadow-md ${
                         dragId === lead.id ? "rotate-2 opacity-50" : ""
                       } ${savingId === lead.id ? "opacity-70" : ""}`}
                     >
@@ -394,13 +391,13 @@ export function LeadsPanel() {
                           <span className={`h-2 w-10 rounded ${label.bar}`} title={label.name} />
                         </div>
                       )}
-                      <p className="text-sm leading-snug text-[#DEE4EA]">{lead.nome}</p>
+                      <p className="text-sm font-bold leading-snug text-[#00205C]">{lead.nome}</p>
                       {lead.empresa_nome && (
-                        <p className="mt-0.5 flex items-center gap-1 text-xs text-[#9FADBC]">
+                        <p className="mt-0.5 flex items-center gap-1 text-xs text-gray-500">
                           <Building2 className="size-3" /> {lead.empresa_nome}
                         </p>
                       )}
-                      <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-[#9FADBC]">
+                      <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-gray-500">
                         <span className="inline-flex items-center gap-1" title={dateFormatter.format(new Date(lead.created_at))}>
                           <Clock className="size-3.5" /> {shortDate.format(new Date(lead.created_at)).replace(".", "")}
                         </span>
@@ -450,13 +447,13 @@ export function LeadsPanel() {
                       }}
                       rows={2}
                       placeholder="Nome do lead"
-                      className="w-full resize-none rounded-lg bg-[#22272B] px-3 py-2 text-sm text-[#DEE4EA] shadow outline-none ring-2 ring-[#85B8FF] placeholder:text-[#8C9BAB]"
+                      className="w-full resize-none rounded-xl border border-[#42C8E5] bg-white px-3 py-2 text-sm text-[#00205C] shadow-sm outline-none ring-2 ring-[#42C8E5]/20 placeholder:text-gray-400"
                     />
                     <div className="mt-1.5 flex items-center gap-1">
-                      <button type="submit" disabled={creating} className="rounded bg-[#579DFF] px-3 py-1.5 text-sm font-semibold text-[#1D2125] hover:bg-[#85B8FF] disabled:opacity-60">
+                      <button type="submit" disabled={creating} className="rounded-full bg-[#00205C] px-4 py-1.5 text-sm font-bold text-white hover:bg-[#003380] disabled:opacity-60">
                         {creating ? "Adicionando…" : "Adicionar cartão"}
                       </button>
-                      <button type="button" onClick={() => setComposer(null)} aria-label="Cancelar" className="flex size-8 items-center justify-center rounded text-[#9FADBC] hover:bg-[#A6C5E229]">
+                      <button type="button" onClick={() => setComposer(null)} aria-label="Cancelar" className="flex size-8 items-center justify-center rounded-full text-gray-500 hover:bg-gray-200">
                         <X className="size-5" />
                       </button>
                     </div>
@@ -472,7 +469,7 @@ export function LeadsPanel() {
                       setComposer(status);
                       setComposerText("");
                     }}
-                    className="flex flex-1 items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium text-[#9FADBC] transition hover:bg-[#A6C5E229] hover:text-[#DEE4EA]"
+                    className="flex flex-1 items-center gap-2 rounded-xl px-2 py-1.5 text-sm font-semibold text-gray-500 transition hover:bg-white hover:text-[#00205C]"
                   >
                     <Plus className="size-4" /> Adicionar um cartão
                   </button>
