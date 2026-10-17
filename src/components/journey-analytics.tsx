@@ -154,7 +154,6 @@ export function JourneyAnalytics() {
       <div className="order-1 mt-5 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm sm:mt-7">
         <div className="border-b border-gray-100 p-5">
           <h2 className="font-display text-xl font-bold uppercase text-[#00205C]">Funil do chat da Hero</h2>
-          <p className="mt-1 text-sm text-gray-500">Acompanha somente os chats abertos pelo botão principal da Hero.</p>
         </div>
         <MobileMetrics
           metrics={[
@@ -172,9 +171,7 @@ export function JourneyAnalytics() {
 
       <div className="order-2 mt-5 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm sm:mt-7">
         <div className="border-b border-gray-100 p-5">
-          <span className="text-xs font-bold uppercase tracking-widest text-[#ff8515]">Card Cliente GoldKo</span>
           <h2 className="font-display text-xl font-bold uppercase text-[#00205C]">Jornada dos clientes</h2>
-          <p className="mt-1 text-sm text-gray-500">Mostra quem abriu o menu, escolheu uma opção, abandonou ou concluiu uma ação.</p>
         </div>
         <MobileMetrics
           metrics={[
@@ -215,19 +212,19 @@ export function JourneyAnalytics() {
       </div>
 
       <div className="order-3 mt-5 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm sm:mt-7">
-        <div className="border-b border-gray-100 p-5"><span className="text-xs font-bold uppercase tracking-widest text-[#ff8515]">Card Clube do Nutri</span><h2 className="font-display text-xl font-bold uppercase text-[#00205C]">Funil do Clube do Nutri</h2></div>
+        <div className="border-b border-gray-100 p-5"><h2 className="font-display text-xl font-bold uppercase text-[#00205C]">Funil do Clube do Nutri</h2></div>
         <MobileMetrics metrics={[{ label: "Clicaram no card", value: programJourneys.nutri.clicked }, { label: "Abandonaram", value: programJourneys.nutri.abandoned, tone: "warning" }, { label: "Foram ao WhatsApp", value: programJourneys.nutri.whatsapp, tone: "success" }]} rateLabel="Taxa de encaminhamento" rate={nutriRate} />
         <div className="hidden overflow-x-auto md:block"><table className="w-full text-left text-sm"><thead className="bg-gray-50 text-xs uppercase text-gray-400"><tr><th className="px-5 py-3">Clicaram no card</th><th className="px-5 py-3">Abandonaram</th><th className="px-5 py-3">Foram direcionados ao WhatsApp</th><th className="px-5 py-3">Taxa de encaminhamento</th></tr></thead><tbody><tr className="border-t border-gray-100"><td className="px-5 py-4 text-lg font-bold text-[#00205C]">{programJourneys.nutri.clicked}</td><td className="px-5 py-4 text-lg font-bold text-amber-600">{programJourneys.nutri.abandoned}</td><td className="px-5 py-4 text-lg font-bold text-emerald-700">{programJourneys.nutri.whatsapp}</td><td className="px-5 py-4 font-bold">{nutriRate}%</td></tr></tbody></table></div>
       </div>
 
       <div className="order-4 mt-5 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm sm:mt-7">
-        <div className="border-b border-gray-100 p-5"><span className="text-xs font-bold uppercase tracking-widest text-[#ff8515]">Card GoldKo para Empresas</span><h2 className="font-display text-xl font-bold uppercase text-[#00205C]">Funil GoldKo para Empresas</h2></div>
+        <div className="border-b border-gray-100 p-5"><h2 className="font-display text-xl font-bold uppercase text-[#00205C]">Funil GoldKo para Empresas</h2></div>
         <MobileMetrics metrics={[{ label: "Clicaram no card", value: programJourneys.empresa.clicked }, { label: "Abandonaram", value: programJourneys.empresa.abandoned, tone: "warning" }, { label: "Foram ao WhatsApp", value: programJourneys.empresa.whatsapp, tone: "success" }]} rateLabel="Taxa de encaminhamento" rate={companyRate} />
         <div className="hidden overflow-x-auto md:block"><table className="w-full text-left text-sm"><thead className="bg-gray-50 text-xs uppercase text-gray-400"><tr><th className="px-5 py-3">Clicaram no card</th><th className="px-5 py-3">Abandonaram</th><th className="px-5 py-3">Foram direcionados ao WhatsApp</th><th className="px-5 py-3">Taxa de encaminhamento</th></tr></thead><tbody><tr className="border-t border-gray-100"><td className="px-5 py-4 text-lg font-bold text-[#00205C]">{programJourneys.empresa.clicked}</td><td className="px-5 py-4 text-lg font-bold text-amber-600">{programJourneys.empresa.abandoned}</td><td className="px-5 py-4 text-lg font-bold text-emerald-700">{programJourneys.empresa.whatsapp}</td><td className="px-5 py-4 font-bold">{companyRate}%</td></tr></tbody></table></div>
       </div>
 
       <div className="order-5 mt-5 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm sm:mt-7">
-        <div className="border-b border-gray-100 p-5"><span className="text-xs font-bold uppercase tracking-widest text-[#ff8515]">Card Eventos e Parcerias</span><h2 className="font-display text-xl font-bold uppercase text-[#00205C]">Funil Eventos e Parcerias</h2></div>
+        <div className="border-b border-gray-100 p-5"><h2 className="font-display text-xl font-bold uppercase text-[#00205C]">Funil Eventos e Parcerias</h2></div>
         <MobileMetrics metrics={[{ label: "Clicaram no card", value: eventJourney.clicked }, { label: "Iniciaram o formulário", value: eventJourney.started }, { label: "Abandonaram", value: eventJourney.abandoned, tone: "warning" }, { label: "Enviaram o cadastro", value: eventJourney.submitted, tone: "success" }]} rateLabel="Taxa de envio" rate={eventRate} />
         <div className="hidden overflow-x-auto md:block"><table className="w-full text-left text-sm"><thead className="bg-gray-50 text-xs uppercase text-gray-400"><tr><th className="px-5 py-3">Clicaram no card</th><th className="px-5 py-3">Iniciaram o formulário</th><th className="px-5 py-3">Abandonaram</th><th className="px-5 py-3">Enviaram o cadastro</th><th className="px-5 py-3">Taxa de envio</th></tr></thead><tbody><tr className="border-t border-gray-100"><td className="px-5 py-4 text-lg font-bold text-[#00205C]">{eventJourney.clicked}</td><td className="px-5 py-4 text-lg font-bold text-[#00205C]">{eventJourney.started}</td><td className="px-5 py-4 text-lg font-bold text-amber-600">{eventJourney.abandoned}</td><td className="px-5 py-4 text-lg font-bold text-emerald-700">{eventJourney.submitted}</td><td className="px-5 py-4 font-bold">{eventRate}%</td></tr></tbody></table></div>
       </div>
