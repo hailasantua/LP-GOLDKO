@@ -30,7 +30,11 @@ async function adminClient(accessToken: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin.auth.getUser(accessToken);
   const user = data.user;
-  if (error || !user || (user.app_metadata?.["role"] !== "admin" && user.email !== "goldkorv@gmail.com")) {
+  if (
+    error ||
+    !user ||
+    (user.app_metadata?.["role"] !== "admin" && user.email !== "goldkorv@gmail.com")
+  ) {
     throw new Error("Acesso não autorizado.");
   }
   return supabaseAdmin;
@@ -82,14 +86,14 @@ const nullableText = (max: number) =>
     .transform((value) => (value === undefined ? undefined : value ? value : null));
 
 const patchSchema = z.object({
-    status: z.enum(LEAD_STATUSES).optional(),
-    tipo: z.enum(["cliente", "empresa", "clube_nutri"]).optional(),
-    nome: z.string().trim().min(2).max(120).optional(),
-    empresa_nome: nullableText(160),
-    whatsapp: nullableText(20),
-    email: nullableText(200),
-    observacoes: nullableText(4000),
-  });
+  status: z.enum(LEAD_STATUSES).optional(),
+  tipo: z.enum(["cliente", "empresa", "clube_nutri"]).optional(),
+  nome: z.string().trim().min(2).max(120).optional(),
+  empresa_nome: nullableText(160),
+  whatsapp: nullableText(20),
+  email: nullableText(200),
+  observacoes: nullableText(4000),
+});
 export type LeadPatch = z.input<typeof patchSchema>;
 
 const updateSchema = tokenSchema.extend({ id: z.string().uuid(), patch: patchSchema });
@@ -98,20 +102,34 @@ export const updateChatLead = createServerFn({ method: "POST" })
   .validator((data) => updateSchema.parse(data))
   .handler(async ({ data }) => {
     const db = await adminClient(data.accessToken);
-    const patch = Object.fromEntries(Object.entries(data.patch).filter(([, value]) => value !== undefined));
+    const patch = Object.fromEntries(
+      Object.entries(data.patch).filter(([, value]) => value !== undefined),
+    );
     if ("whatsapp" in patch && typeof patch["whatsapp"] === "string") {
       patch["whatsapp"] = patch["whatsapp"].replace(/\D/g, "") || null;
     }
 
-    const first = await db.from("leads_onboarding").update(patch as LeadUpdate).eq("id", data.id).select("id").single();
+    const first = await db
+      .from("leads_onboarding")
+      .update(patch as LeadUpdate)
+      .eq("id", data.id)
+      .select("id")
+      .single();
     if (!first.error) return { success: true, skipped: [] as string[] };
 
     // Banco ainda sem as colunas novas: salva o que for possível e avisa o painel.
     if (isMissingColumn(first.error.code)) {
       const skipped = NEW_COLUMNS.filter((column) => column in patch);
-      const legacyPatch = Object.fromEntries(Object.entries(patch).filter(([key]) => !skipped.includes(key as never)));
+      const legacyPatch = Object.fromEntries(
+        Object.entries(patch).filter(([key]) => !skipped.includes(key as never)),
+      );
       if (Object.keys(legacyPatch).length > 0) {
-        const retry = await db.from("leads_onboarding").update(legacyPatch as LeadUpdate).eq("id", data.id).select("id").single();
+        const retry = await db
+          .from("leads_onboarding")
+          .update(legacyPatch as LeadUpdate)
+          .eq("id", data.id)
+          .select("id")
+          .single();
         if (retry.error) throw new Error(`Não foi possível salvar: ${retry.error.message}`);
       }
       return { success: true, skipped: [...skipped] };
@@ -144,9 +162,18 @@ export const createManualLead = createServerFn({ method: "POST" })
     const db = await adminClient(data.accessToken);
     const { data: row, error } = await db
       .from("leads_onboarding")
-      .insert({ nome: data.nome, status: data.status, tipo: data.tipo, whatsapp: "", utm_source: "manual" } as LeadUpdate as never)
+      .insert({
+        nome: data.nome,
+        status: data.status,
+        tipo: data.tipo,
+        whatsapp: "",
+        utm_source: "manual",
+      } as LeadUpdate as never)
       .select("*")
       .single();
     if (error) throw new Error(`Não foi possível criar o cartão: ${error.message}`);
-    return { id: String((row as Record<string, unknown>)["id"]), created_at: String((row as Record<string, unknown>)["created_at"]) };
+    return {
+      id: String((row as Record<string, unknown>)["id"]),
+      created_at: String((row as Record<string, unknown>)["created_at"]),
+    };
   });

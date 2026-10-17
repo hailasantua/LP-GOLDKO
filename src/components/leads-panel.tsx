@@ -1,5 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlignLeft, Building2, CheckSquare, Clock, Download, Loader2, Mail, MessageCircle, Plus, RefreshCw, Search, Trash2, X } from "lucide-react";
+import {
+  AlignLeft,
+  Building2,
+  CheckSquare,
+  Clock,
+  Download,
+  Loader2,
+  Mail,
+  MessageCircle,
+  Plus,
+  RefreshCw,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   createManualLead,
@@ -15,8 +29,16 @@ import {
 const STATUS_META: Record<LeadStatus, { label: string; chip: string; dot: string }> = {
   novo: { label: "Novo", chip: "bg-[#42C8E5]/15 text-[#00205C]", dot: "bg-[#42C8E5]" },
   contatado: { label: "Contatado", chip: "bg-amber-100 text-amber-800", dot: "bg-amber-500" },
-  qualificado: { label: "Qualificado", chip: "bg-violet-100 text-violet-800", dot: "bg-violet-500" },
-  convertido: { label: "Convertido", chip: "bg-emerald-100 text-emerald-800", dot: "bg-emerald-600" },
+  qualificado: {
+    label: "Qualificado",
+    chip: "bg-violet-100 text-violet-800",
+    dot: "bg-violet-500",
+  },
+  convertido: {
+    label: "Convertido",
+    chip: "bg-emerald-100 text-emerald-800",
+    dot: "bg-emerald-600",
+  },
   perdido: { label: "Perdido", chip: "bg-gray-200 text-gray-600", dot: "bg-gray-400" },
 };
 
@@ -53,25 +75,30 @@ const INTEREST_LABELS: Record<string, string> = {
 };
 
 const normalizeTipo = (tipo: string) => (tipo === "nutricionista" ? "clube_nutri" : tipo);
-const isStatus = (value: string): value is LeadStatus => (LEAD_STATUSES as readonly string[]).includes(value);
+const isStatus = (value: string): value is LeadStatus =>
+  (LEAD_STATUSES as readonly string[]).includes(value);
 const statusOf = (lead: ChatLeadRow): LeadStatus => (isStatus(lead.status) ? lead.status : "novo");
 
 function quantityOf(lead: ChatLeadRow) {
   const tipo = normalizeTipo(lead.tipo);
-  if (tipo === "empresa") return lead.qtd_colaboradores ? `${lead.qtd_colaboradores} colaboradores` : "";
+  if (tipo === "empresa")
+    return lead.qtd_colaboradores ? `${lead.qtd_colaboradores} colaboradores` : "";
   if (tipo === "clube_nutri") return lead.qtd_pacientes ? `${lead.qtd_pacientes} pacientes` : "";
   return lead.qtd_pacientes ? `Família: ${lead.qtd_pacientes}` : "";
 }
 
 function interestsOf(lead: ChatLeadRow) {
-  const values = normalizeTipo(lead.tipo) === "empresa" ? lead.interesse_empresa : lead.interesse_nutri;
+  const values =
+    normalizeTipo(lead.tipo) === "empresa" ? lead.interesse_empresa : lead.interesse_nutri;
   return (values || []).map((value) => INTEREST_LABELS[value] || value);
 }
 
 function formatPhone(raw: string | null) {
   const digits = (raw || "").replace(/\D/g, "");
-  if (digits.length === 11) return `(${digits.slice(0, 2)}) ${digits[2]} ${digits.slice(3, 7)}-${digits.slice(7)}`;
-  if (digits.length === 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  if (digits.length === 11)
+    return `(${digits.slice(0, 2)}) ${digits[2]} ${digits.slice(3, 7)}-${digits.slice(7)}`;
+  if (digits.length === 10)
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
   return raw || "";
 }
 
@@ -88,11 +115,19 @@ function contactOf(lead: ChatLeadRow) {
 function whatsappLink(phone: string, name: string) {
   const digits = phone.replace(/\D/g, "");
   const full = digits.length <= 11 ? `55${digits}` : digits;
-  const text = encodeURIComponent(`Olá, ${name.split(" ")[0]}! Aqui é da GoldKo. Recebemos seu cadastro pelo nosso site.`);
+  const text = encodeURIComponent(
+    `Olá, ${name.split(" ")[0]}! Aqui é da GoldKo. Recebemos seu cadastro pelo nosso site.`,
+  );
   return `https://wa.me/${full}?text=${text}`;
 }
 
-const dateFormatter = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" });
+const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+});
 
 async function getToken() {
   const { data } = await supabase.auth.getSession();
@@ -117,19 +152,30 @@ const COLUMN_ACCENT: Record<LeadStatus, string> = {
 
 const shortDate = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" });
 
+type Tipo = "cliente" | "empresa" | "clube_nutri";
+const BOARD_COLUMNS: { tipo: Tipo; title: string }[] = [
+  { tipo: "cliente", title: "Clientes" },
+  { tipo: "empresa", title: "Empresas" },
+  { tipo: "clube_nutri", title: "Clube Nutri" },
+];
+const STATUS_FILTERS: { value: LeadStatus | "todos"; label: string }[] = [
+  { value: "todos", label: "Todos" },
+  ...LEAD_STATUSES.map((status) => ({ value: status, label: STATUS_META[status].label })),
+];
+
 export function LeadsPanel() {
   const [leads, setLeads] = useState<ChatLeadRow[]>([]);
   const [migrated, setMigrated] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [segment, setSegment] = useState<SegmentFilter>("todos");
+  const [statusFilter, setStatusFilter] = useState<LeadStatus | "todos">("todos");
   const [query, setQuery] = useState("");
   const [savingId, setSavingId] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [toast, setToast] = useState("");
   const [dragId, setDragId] = useState<string | null>(null);
-  const [overColumn, setOverColumn] = useState<LeadStatus | null>(null);
-  const [composer, setComposer] = useState<LeadStatus | null>(null);
+  const [overColumn, setOverColumn] = useState<Tipo | null>(null);
+  const [composer, setComposer] = useState<Tipo | null>(null);
   const [composerText, setComposerText] = useState("");
   const [creating, setCreating] = useState(false);
 
@@ -160,11 +206,15 @@ export function LeadsPanel() {
   async function saveLead(id: string, patch: LeadPatch, quiet = false) {
     setSavingId(id);
     const previous = leads;
-    setLeads((list) => list.map((lead) => (lead.id === id ? ({ ...lead, ...patch } as ChatLeadRow) : lead)));
+    setLeads((list) =>
+      list.map((lead) => (lead.id === id ? ({ ...lead, ...patch } as ChatLeadRow) : lead)),
+    );
     try {
       const result = await updateChatLead({ data: { accessToken: await getToken(), id, patch } });
       if (result.skipped.length) {
-        setToast("Salvo. Empresa, e-mail e anotações só serão guardados depois de rodar a atualização do banco.");
+        setToast(
+          "Salvo. Empresa, e-mail e anotações só serão guardados depois de rodar a atualização do banco.",
+        );
       } else if (!quiet) {
         setToast("Alterações salvas");
       }
@@ -192,13 +242,15 @@ export function LeadsPanel() {
     }
   }
 
-  async function createCard(status: LeadStatus) {
+  async function createCard(tipo: Tipo) {
+    const status: LeadStatus = statusFilter === "todos" ? "novo" : statusFilter;
     const nome = composerText.trim();
     if (nome.length < 2) return;
     setCreating(true);
     try {
-      const tipo = segment === "todos" ? "cliente" : segment;
-      const created = await createManualLead({ data: { accessToken: await getToken(), nome, status, tipo } });
+      const created = await createManualLead({
+        data: { accessToken: await getToken(), nome, status, tipo },
+      });
       const card: ChatLeadRow = {
         id: created.id,
         created_at: created.created_at,
@@ -224,35 +276,51 @@ export function LeadsPanel() {
     }
   }
 
-  function dropOn(status: LeadStatus) {
+  function dropOn(tipo: Tipo) {
     const id = dragId;
     setDragId(null);
     setOverColumn(null);
     if (!id) return;
     const lead = leads.find((item) => item.id === id);
-    if (!lead || statusOf(lead) === status) return;
-    void saveLead(id, { status }, true);
+    if (!lead || normalizeTipo(lead.tipo) === tipo) return;
+    void saveLead(id, { tipo }, true);
   }
 
   const visible = useMemo(() => {
     const term = query.trim().toLowerCase();
     return leads.filter((lead) => {
-      if (segment !== "todos" && normalizeTipo(lead.tipo) !== segment) return false;
+      if (statusFilter !== "todos" && statusOf(lead) !== statusFilter) return false;
       if (!term) return true;
       const contact = contactOf(lead);
       return [lead.nome, lead.empresa_nome, contact.phone, contact.email, lead.observacoes]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(term));
     });
-  }, [leads, segment, query]);
+  }, [leads, statusFilter, query]);
 
   const columns = useMemo(
-    () => LEAD_STATUSES.map((status) => ({ status, cards: visible.filter((lead) => statusOf(lead) === status) })),
+    () =>
+      BOARD_COLUMNS.map((column) => ({
+        status: column.tipo,
+        title: column.title,
+        cards: visible.filter((lead) => normalizeTipo(lead.tipo) === column.tipo),
+      })),
     [visible],
   );
 
   function exportCsv() {
-    const header = ["Data", "Perfil", "Nome", "Empresa", "WhatsApp", "E-mail", "Volume", "Interesses", "Etapa", "Anotações"];
+    const header = [
+      "Data",
+      "Perfil",
+      "Nome",
+      "Empresa",
+      "WhatsApp",
+      "E-mail",
+      "Volume",
+      "Interesses",
+      "Etapa",
+      "Anotações",
+    ];
     const rows = visible.map((lead) => {
       const contact = contactOf(lead);
       return [
@@ -268,8 +336,10 @@ export function LeadsPanel() {
         lead.observacoes || "",
       ];
     });
-    const csv = [header, ...rows].map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(";")).join("\n");
-    const blob = new Blob([`﻿${csv}`], { type: "text/csv;charset=utf-8" });
+    const csv = [header, ...rows]
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(";"))
+      .join("\n");
+    const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -284,17 +354,24 @@ export function LeadsPanel() {
     <div className="flex h-[calc(100dvh-4rem)] flex-col overflow-hidden bg-[#F8F8F8]">
       {/* BARRA DO QUADRO */}
       <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-gray-200 bg-white px-4 py-2.5 md:px-6">
-        <h1 className="mr-2 font-display text-xl font-bold uppercase tracking-wide text-[#00205C]">Leads</h1>
+        <h1 className="mr-2 font-display text-xl font-bold uppercase tracking-wide text-[#00205C]">
+          Leads
+        </h1>
         <div className="flex items-center gap-1">
-          {SEGMENTS.map((item) => (
+          {STATUS_FILTERS.map((item) => (
             <button
               key={item.value}
               type="button"
-              onClick={() => setSegment(item.value)}
-              className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition ${
-                segment === item.value ? "bg-[#00205C] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              onClick={() => setStatusFilter(item.value)}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition ${
+                statusFilter === item.value
+                  ? "bg-[#00205C] text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
               }`}
             >
+              {item.value !== "todos" && (
+                <span className={`size-1.5 rounded-full ${COLUMN_ACCENT[item.value]}`} />
+              )}
               {item.label}
             </button>
           ))}
@@ -309,7 +386,12 @@ export function LeadsPanel() {
               className="w-60 rounded-full border border-gray-200 bg-gray-50 py-2 pl-10 pr-4 text-sm outline-none focus:border-[#42C8E5] focus:bg-white"
             />
           </label>
-          <button type="button" onClick={() => void load()} title="Atualizar" className="flex size-9 items-center justify-center rounded-full border border-gray-200 bg-white text-[#00205C] transition hover:bg-gray-50">
+          <button
+            type="button"
+            onClick={() => void load()}
+            title="Atualizar"
+            className="flex size-9 items-center justify-center rounded-full border border-gray-200 bg-white text-[#00205C] transition hover:bg-gray-50"
+          >
             <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
           </button>
           <button
@@ -325,15 +407,21 @@ export function LeadsPanel() {
 
       {!migrated && (
         <div className="shrink-0 bg-amber-100 px-5 py-2 text-xs text-amber-900">
-          Falta rodar no Supabase o arquivo <code className="font-bold">supabase/migrations/20261016_leads_empresa_email.sql</code> para guardar empresa, e-mail e anotações.
+          Falta rodar no Supabase o arquivo{" "}
+          <code className="font-bold">supabase/migrations/20261016_leads_empresa_email.sql</code>{" "}
+          para guardar empresa, e-mail e anotações.
         </div>
       )}
-      {error && <div className="shrink-0 bg-red-100 px-5 py-2 text-sm font-semibold text-red-800">{error}</div>}
+      {error && (
+        <div className="shrink-0 bg-red-100 px-5 py-2 text-sm font-semibold text-red-800">
+          {error}
+        </div>
+      )}
 
       {/* COLUNAS */}
       <div className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden">
         <div className="flex h-full items-start gap-3 p-3 md:p-4">
-          {columns.map(({ status, cards }) => (
+          {columns.map(({ status, title, cards }) => (
             <section
               key={status}
               onDragOver={(event) => {
@@ -341,7 +429,8 @@ export function LeadsPanel() {
                 if (overColumn !== status) setOverColumn(status);
               }}
               onDragLeave={(event) => {
-                if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOverColumn(null);
+                if (!event.currentTarget.contains(event.relatedTarget as Node | null))
+                  setOverColumn(null);
               }}
               onDrop={(event) => {
                 event.preventDefault();
@@ -352,13 +441,17 @@ export function LeadsPanel() {
               }`}
             >
               <header className="flex items-center gap-2 px-3 pb-2 pt-3">
-                <span className={`h-2 w-2 rounded-full ${COLUMN_ACCENT[status]}`} />
-                <h2 className="flex-1 text-xs font-bold uppercase tracking-wide text-[#00205C]">{STATUS_META[status].label}</h2>
-                <span className="rounded-full bg-white px-2 py-0.5 text-xs font-bold text-gray-500">{cards.length}</span>
+                <span className={`h-2 w-5 rounded ${SEGMENT_LABEL_COLOR[status]!.bar}`} />
+                <h2 className="flex-1 text-xs font-bold uppercase tracking-wide text-[#00205C]">
+                  {title}
+                </h2>
+                <span className="rounded-full bg-white px-2 py-0.5 text-xs font-bold text-gray-500">
+                  {cards.length}
+                </span>
               </header>
 
               <div className="min-h-[8px] flex-1 space-y-2 overflow-y-auto px-2 pb-1">
-                {loading && leads.length === 0 && status === "novo" && (
+                {loading && leads.length === 0 && status === "cliente" && (
                   <div className="flex items-center gap-2 px-2 py-3 text-sm text-gray-500">
                     <Loader2 className="size-4 animate-spin" /> Carregando…
                   </div>
@@ -366,7 +459,7 @@ export function LeadsPanel() {
                 {cards.map((lead) => {
                   const contact = contactOf(lead);
                   const tipo = normalizeTipo(lead.tipo);
-                  const label = SEGMENT_LABEL_COLOR[tipo];
+                  const stage = statusOf(lead);
                   const interests = interestsOf(lead);
                   return (
                     <article
@@ -386,11 +479,14 @@ export function LeadsPanel() {
                         dragId === lead.id ? "rotate-2 opacity-50" : ""
                       } ${savingId === lead.id ? "opacity-70" : ""}`}
                     >
-                      {label && (
-                        <div className="mb-1.5 flex gap-1">
-                          <span className={`h-2 w-10 rounded ${label.bar}`} title={label.name} />
-                        </div>
-                      )}
+                      <div className="mb-1.5 flex gap-1">
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-bold ${STATUS_META[stage].chip}`}
+                        >
+                          <span className={`size-1.5 rounded-full ${STATUS_META[stage].dot}`} />
+                          {STATUS_META[stage].label}
+                        </span>
+                      </div>
                       <p className="text-sm font-bold leading-snug text-[#00205C]">{lead.nome}</p>
                       {lead.empresa_nome && (
                         <p className="mt-0.5 flex items-center gap-1 text-xs text-gray-500">
@@ -398,11 +494,18 @@ export function LeadsPanel() {
                         </p>
                       )}
                       <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-gray-500">
-                        <span className="inline-flex items-center gap-1" title={dateFormatter.format(new Date(lead.created_at))}>
-                          <Clock className="size-3.5" /> {shortDate.format(new Date(lead.created_at)).replace(".", "")}
+                        <span
+                          className="inline-flex items-center gap-1"
+                          title={dateFormatter.format(new Date(lead.created_at))}
+                        >
+                          <Clock className="size-3.5" />{" "}
+                          {shortDate.format(new Date(lead.created_at)).replace(".", "")}
                         </span>
                         {contact.phone && (
-                          <span className="inline-flex items-center gap-1" title={formatPhone(contact.phone)}>
+                          <span
+                            className="inline-flex items-center gap-1"
+                            title={formatPhone(contact.phone)}
+                          >
                             <MessageCircle className="size-3.5" />
                           </span>
                         )}
@@ -417,7 +520,10 @@ export function LeadsPanel() {
                           </span>
                         )}
                         {interests.length > 0 && (
-                          <span className="inline-flex items-center gap-1" title={interests.join(", ")}>
+                          <span
+                            className="inline-flex items-center gap-1"
+                            title={interests.join(", ")}
+                          >
                             <CheckSquare className="size-3.5" /> {interests.length}
                           </span>
                         )}
@@ -450,10 +556,19 @@ export function LeadsPanel() {
                       className="w-full resize-none rounded-xl border border-[#42C8E5] bg-white px-3 py-2 text-sm text-[#00205C] shadow-sm outline-none ring-2 ring-[#42C8E5]/20 placeholder:text-gray-400"
                     />
                     <div className="mt-1.5 flex items-center gap-1">
-                      <button type="submit" disabled={creating} className="rounded-full bg-[#00205C] px-4 py-1.5 text-sm font-bold text-white hover:bg-[#003380] disabled:opacity-60">
+                      <button
+                        type="submit"
+                        disabled={creating}
+                        className="rounded-full bg-[#00205C] px-4 py-1.5 text-sm font-bold text-white hover:bg-[#003380] disabled:opacity-60"
+                      >
                         {creating ? "Adicionando…" : "Adicionar cartão"}
                       </button>
-                      <button type="button" onClick={() => setComposer(null)} aria-label="Cancelar" className="flex size-8 items-center justify-center rounded-full text-gray-500 hover:bg-gray-200">
+                      <button
+                        type="button"
+                        onClick={() => setComposer(null)}
+                        aria-label="Cancelar"
+                        className="flex size-8 items-center justify-center rounded-full text-gray-500 hover:bg-gray-200"
+                      >
                         <X className="size-5" />
                       </button>
                     </div>
@@ -524,7 +639,9 @@ function LeadSheet({
   const [email, setEmail] = useState(contact.email);
   const [status, setStatus] = useState<LeadStatus>(statusOf(lead));
   const [tipo, setTipo] = useState<"cliente" | "empresa" | "clube_nutri">(
-    (["cliente", "empresa", "clube_nutri"].includes(normalizeTipo(lead.tipo)) ? normalizeTipo(lead.tipo) : "cliente") as "cliente" | "empresa" | "clube_nutri",
+    (["cliente", "empresa", "clube_nutri"].includes(normalizeTipo(lead.tipo))
+      ? normalizeTipo(lead.tipo)
+      : "cliente") as "cliente" | "empresa" | "clube_nutri",
   );
   const [observacoes, setObservacoes] = useState(lead.observacoes || "");
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -544,8 +661,10 @@ function LeadSheet({
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     if (nome.trim().length < 2) return setFormError("Informe o nome.");
-    if (!whatsapp.trim() && !email.trim()) return setFormError("Informe pelo menos um contato: WhatsApp ou e-mail.");
-    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) return setFormError("E-mail inválido.");
+    if (!whatsapp.trim() && !email.trim())
+      return setFormError("Informe pelo menos um contato: WhatsApp ou e-mail.");
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim()))
+      return setFormError("E-mail inválido.");
     setFormError("");
     const patch: LeadPatch = {
       nome: nome.trim(),
@@ -568,16 +687,27 @@ function LeadSheet({
   const labelClass = "mb-1 block text-xs font-bold text-[#00205C]";
 
   return (
-    <div className="fixed inset-0 z-[250] flex justify-end bg-[#001433]/40 backdrop-blur-[2px]" onClick={(event) => event.target === event.currentTarget && onClose()}>
+    <div
+      className="fixed inset-0 z-[250] flex justify-end bg-[#001433]/40 backdrop-blur-[2px]"
+      onClick={(event) => event.target === event.currentTarget && onClose()}
+    >
       <aside className="flex h-full w-full max-w-md flex-col bg-white shadow-2xl animate-in slide-in-from-right duration-300">
         <header className="flex items-start justify-between gap-3 border-b border-gray-100 px-6 py-5">
           <div className="min-w-0">
             <p className="text-[11px] font-bold uppercase tracking-widest text-[#ff8515]">
-              {TIPO_LABEL[lead.tipo] || lead.tipo} · {dateFormatter.format(new Date(lead.created_at))}
+              {TIPO_LABEL[lead.tipo] || lead.tipo} ·{" "}
+              {dateFormatter.format(new Date(lead.created_at))}
             </p>
-            <h2 className="mt-1 truncate font-display text-2xl font-bold uppercase text-[#00205C]">{lead.nome}</h2>
+            <h2 className="mt-1 truncate font-display text-2xl font-bold uppercase text-[#00205C]">
+              {lead.nome}
+            </h2>
           </div>
-          <button type="button" onClick={onClose} aria-label="Fechar" className="flex size-9 shrink-0 items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:bg-gray-100">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Fechar"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:bg-gray-100"
+          >
             <X className="size-4" />
           </button>
         </header>
@@ -586,12 +716,20 @@ function LeadSheet({
           <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5">
             <div className="flex flex-wrap gap-2">
               {contact.phone && (
-                <a href={whatsappLink(contact.phone, lead.nome)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700">
+                <a
+                  href={whatsappLink(contact.phone, lead.nome)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700"
+                >
                   <MessageCircle className="size-4" /> Chamar no WhatsApp
                 </a>
               )}
               {contact.email && (
-                <a href={`mailto:${contact.email}`} className="inline-flex items-center gap-2 rounded-full border border-gray-200 px-4 py-2 text-sm font-bold text-[#00205C] hover:bg-gray-50">
+                <a
+                  href={`mailto:${contact.email}`}
+                  className="inline-flex items-center gap-2 rounded-full border border-gray-200 px-4 py-2 text-sm font-bold text-[#00205C] hover:bg-gray-50"
+                >
                   <Mail className="size-4" /> Enviar e-mail
                 </a>
               )}
@@ -632,34 +770,61 @@ function LeadSheet({
 
             <label className="block">
               <span className={labelClass}>Nome</span>
-              <input value={nome} onChange={(e) => setNome(e.target.value)} className={fieldClass} />
+              <input
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                className={fieldClass}
+              />
             </label>
             {(tipo === "empresa" || lead.empresa_nome) && (
               <label className="block">
                 <span className={labelClass}>Empresa</span>
-                <input value={empresa} onChange={(e) => setEmpresa(e.target.value)} disabled={!migrated} className={fieldClass} placeholder="Nome da empresa" />
+                <input
+                  value={empresa}
+                  onChange={(e) => setEmpresa(e.target.value)}
+                  disabled={!migrated}
+                  className={fieldClass}
+                  placeholder="Nome da empresa"
+                />
               </label>
             )}
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block">
                 <span className={labelClass}>WhatsApp</span>
-                <input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} inputMode="tel" className={fieldClass} placeholder="(64) 99999-9999" />
+                <input
+                  value={whatsapp}
+                  onChange={(e) => setWhatsapp(e.target.value)}
+                  inputMode="tel"
+                  className={fieldClass}
+                  placeholder="(64) 99999-9999"
+                />
               </label>
               <label className="block">
                 <span className={labelClass}>E-mail</span>
-                <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" disabled={!migrated} className={fieldClass} placeholder="nome@empresa.com.br" />
+                <input
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  type="email"
+                  disabled={!migrated}
+                  className={fieldClass}
+                  placeholder="nome@empresa.com.br"
+                />
               </label>
             </div>
 
             <div className="rounded-2xl bg-gray-50 p-4 text-sm">
               <p className="text-xs font-bold uppercase text-gray-400">Respostas no chat</p>
               <p className="mt-2 text-gray-700">
-                <span className="font-semibold text-[#00205C]">Volume:</span> {quantityOf(lead) || "—"}
+                <span className="font-semibold text-[#00205C]">Volume:</span>{" "}
+                {quantityOf(lead) || "—"}
               </p>
               <div className="mt-2 flex flex-wrap gap-1">
                 {interests.length ? (
                   interests.map((interest) => (
-                    <span key={interest} className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-gray-600 ring-1 ring-gray-200">
+                    <span
+                      key={interest}
+                      className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-gray-600 ring-1 ring-gray-200"
+                    >
                       {interest}
                     </span>
                   ))
@@ -677,7 +842,11 @@ function LeadSheet({
                 disabled={!migrated}
                 rows={4}
                 className={`${fieldClass} resize-none`}
-                placeholder={migrated ? "Ex.: pediu orçamento de 50 kits para dezembro" : "Disponível depois da atualização do banco"}
+                placeholder={
+                  migrated
+                    ? "Ex.: pediu orçamento de 50 kits para dezembro"
+                    : "Disponível depois da atualização do banco"
+                }
               />
             </label>
 
@@ -688,15 +857,36 @@ function LeadSheet({
             {confirmDelete ? (
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-red-700">Excluir de vez?</span>
-                <button type="button" onClick={onDelete} disabled={saving} className="rounded-full bg-red-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-red-700">Sim, excluir</button>
-                <button type="button" onClick={() => setConfirmDelete(false)} className="rounded-full px-2 py-1.5 text-xs font-bold text-gray-500 hover:bg-gray-100">Não</button>
+                <button
+                  type="button"
+                  onClick={onDelete}
+                  disabled={saving}
+                  className="rounded-full bg-red-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-red-700"
+                >
+                  Sim, excluir
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(false)}
+                  className="rounded-full px-2 py-1.5 text-xs font-bold text-gray-500 hover:bg-gray-100"
+                >
+                  Não
+                </button>
               </div>
             ) : (
-              <button type="button" onClick={() => setConfirmDelete(true)} className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(true)}
+                className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50"
+              >
                 <Trash2 className="size-3.5" /> Excluir
               </button>
             )}
-            <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-full bg-[#00205C] px-6 py-2.5 text-sm font-bold text-white hover:bg-[#003380] disabled:opacity-50">
+            <button
+              type="submit"
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-full bg-[#00205C] px-6 py-2.5 text-sm font-bold text-white hover:bg-[#003380] disabled:opacity-50"
+            >
               {saving && <Loader2 className="size-4 animate-spin" />} Salvar
             </button>
           </footer>
