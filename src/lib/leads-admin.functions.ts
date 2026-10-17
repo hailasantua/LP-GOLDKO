@@ -83,6 +83,7 @@ const nullableText = (max: number) =>
 
 const patchSchema = z.object({
     status: z.enum(LEAD_STATUSES).optional(),
+    tipo: z.enum(["cliente", "empresa", "clube_nutri"]).optional(),
     nome: z.string().trim().min(2).max(120).optional(),
     empresa_nome: nullableText(160),
     whatsapp: nullableText(20),
@@ -128,4 +129,24 @@ export const deleteChatLead = createServerFn({ method: "POST" })
     const { error } = await db.from("leads_onboarding").delete().eq("id", data.id);
     if (error) throw new Error(`Não foi possível excluir: ${error.message}`);
     return { success: true };
+  });
+
+const createSchema = tokenSchema.extend({
+  nome: z.string().trim().min(2).max(120),
+  status: z.enum(LEAD_STATUSES),
+  tipo: z.enum(["cliente", "empresa", "clube_nutri"]).default("cliente"),
+});
+
+/** Cartão criado à mão no quadro (ex.: contato que chegou por telefone ou na loja). */
+export const createManualLead = createServerFn({ method: "POST" })
+  .validator((data) => createSchema.parse(data))
+  .handler(async ({ data }) => {
+    const db = await adminClient(data.accessToken);
+    const { data: row, error } = await db
+      .from("leads_onboarding")
+      .insert({ nome: data.nome, status: data.status, tipo: data.tipo, whatsapp: "", utm_source: "manual" } as LeadUpdate as never)
+      .select("*")
+      .single();
+    if (error) throw new Error(`Não foi possível criar o cartão: ${error.message}`);
+    return { id: String((row as Record<string, unknown>)["id"]), created_at: String((row as Record<string, unknown>)["created_at"]) };
   });

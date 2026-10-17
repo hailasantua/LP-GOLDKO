@@ -790,11 +790,12 @@ export function ContentPanel() {
         </header>
 
         {/* CONTEÚDO PRINCIPAL DO DASHBOARD */}
+        {adminTab === "leads" ? (
+          <LeadsPanel />
+        ) : (
         <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 md:py-12 lg:px-8">
           {adminTab === "journey" ? (
             <JourneyAnalytics />
-          ) : adminTab === "leads" ? (
-            <LeadsPanel />
           ) : (
             <>
               {/* Cabeçalho da Seção */}
@@ -936,6 +937,7 @@ export function ContentPanel() {
             </>
           )}
         </main>
+        )}
 
         {/* MODAL PARA CRIAR NOVA PÁGINA */}
         {isCreateModalOpen && (

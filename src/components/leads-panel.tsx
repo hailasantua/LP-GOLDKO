@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Building2, Download, Loader2, Mail, MessageCircle, RefreshCw, Search, Trash2, X } from "lucide-react";
+import { AlignLeft, Building2, CheckSquare, Clock, Download, Loader2, Mail, MessageCircle, Plus, RefreshCw, Search, Trash2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
+  createManualLead,
   deleteChatLead,
   LEAD_STATUSES,
   listChatLeads,
@@ -100,41 +101,21 @@ async function getToken() {
   return token;
 }
 
-function StatusChip({ status }: { status: LeadStatus }) {
-  const meta = STATUS_META[status];
-  return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${meta.chip}`}>
-      <span className={`size-1.5 rounded-full ${meta.dot}`} />
-      {meta.label}
-    </span>
-  );
-}
+const SEGMENT_LABEL_COLOR: Record<string, { bar: string; name: string }> = {
+  cliente: { bar: "bg-[#4BCE97]", name: "Cliente" },
+  empresa: { bar: "bg-[#579DFF]", name: "Empresa" },
+  clube_nutri: { bar: "bg-[#9F8FEF]", name: "Clube Nutri" },
+};
 
-function StatusSelect({ value, onChange, disabled }: { value: LeadStatus; onChange: (status: LeadStatus) => void; disabled?: boolean }) {
-  const meta = STATUS_META[value];
-  return (
-    <select
-      value={value}
-      disabled={disabled}
-      onClick={(event) => event.stopPropagation()}
-      onChange={(event) => onChange(event.target.value as LeadStatus)}
-      aria-label="Status do lead"
-      className={`cursor-pointer appearance-none rounded-full border-0 py-1 pl-3 pr-7 text-xs font-bold outline-none ring-[#42C8E5] focus:ring-2 disabled:opacity-60 ${meta.chip}`}
-      style={{
-        backgroundImage:
-          "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2300205C' stroke-width='3'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
-        backgroundRepeat: "no-repeat",
-        backgroundPosition: "right 10px center",
-      }}
-    >
-      {LEAD_STATUSES.map((status) => (
-        <option key={status} value={status}>
-          {STATUS_META[status].label}
-        </option>
-      ))}
-    </select>
-  );
-}
+const COLUMN_ACCENT: Record<LeadStatus, string> = {
+  novo: "bg-[#42C8E5]",
+  contatado: "bg-[#F5CD47]",
+  qualificado: "bg-[#9F8FEF]",
+  convertido: "bg-[#4BCE97]",
+  perdido: "bg-[#8C9BAB]",
+};
+
+const shortDate = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" });
 
 export function LeadsPanel() {
   const [leads, setLeads] = useState<ChatLeadRow[]>([]);
@@ -142,11 +123,15 @@ export function LeadsPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [segment, setSegment] = useState<SegmentFilter>("todos");
-  const [statusFilter, setStatusFilter] = useState<LeadStatus | "todos">("todos");
   const [query, setQuery] = useState("");
   const [savingId, setSavingId] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [toast, setToast] = useState("");
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overColumn, setOverColumn] = useState<LeadStatus | null>(null);
+  const [composer, setComposer] = useState<LeadStatus | null>(null);
+  const [composerText, setComposerText] = useState("");
+  const [creating, setCreating] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -172,17 +157,17 @@ export function LeadsPanel() {
     return () => clearTimeout(timer);
   }, [toast]);
 
-  async function saveLead(id: string, patch: LeadPatch) {
+  async function saveLead(id: string, patch: LeadPatch, quiet = false) {
     setSavingId(id);
     const previous = leads;
     setLeads((list) => list.map((lead) => (lead.id === id ? ({ ...lead, ...patch } as ChatLeadRow) : lead)));
     try {
       const result = await updateChatLead({ data: { accessToken: await getToken(), id, patch } });
-      setToast(
-        result.skipped.length
-          ? "Salvo. Empresa, e-mail e anotações só serão guardados depois de rodar a atualização do banco."
-          : "Alterações salvas",
-      );
+      if (result.skipped.length) {
+        setToast("Salvo. Empresa, e-mail e anotações só serão guardados depois de rodar a atualização do banco.");
+      } else if (!quiet) {
+        setToast("Alterações salvas");
+      }
       return true;
     } catch (err) {
       setLeads(previous);
@@ -199,7 +184,7 @@ export function LeadsPanel() {
       await deleteChatLead({ data: { accessToken: await getToken(), id } });
       setLeads((list) => list.filter((lead) => lead.id !== id));
       setOpenId(null);
-      setToast("Lead excluído");
+      setToast("Cartão excluído");
     } catch (err) {
       setToast(err instanceof Error ? err.message : "Não foi possível excluir.");
     } finally {
@@ -207,33 +192,67 @@ export function LeadsPanel() {
     }
   }
 
-  const bySegment = useMemo(
-    () => (segment === "todos" ? leads : leads.filter((lead) => normalizeTipo(lead.tipo) === segment)),
-    [leads, segment],
-  );
+  async function createCard(status: LeadStatus) {
+    const nome = composerText.trim();
+    if (nome.length < 2) return;
+    setCreating(true);
+    try {
+      const tipo = segment === "todos" ? "cliente" : segment;
+      const created = await createManualLead({ data: { accessToken: await getToken(), nome, status, tipo } });
+      const card: ChatLeadRow = {
+        id: created.id,
+        created_at: created.created_at,
+        tipo,
+        nome,
+        empresa_nome: null,
+        whatsapp: "",
+        email: null,
+        qtd_pacientes: null,
+        qtd_colaboradores: null,
+        interesse_nutri: null,
+        interesse_empresa: null,
+        status,
+        observacoes: null,
+        utm_source: "manual",
+      };
+      setLeads((list) => [card, ...list]);
+      setComposerText("");
+    } catch (err) {
+      setToast(err instanceof Error ? err.message : "Não foi possível criar o cartão.");
+    } finally {
+      setCreating(false);
+    }
+  }
 
-  const statusCounts = useMemo(() => {
-    const counts = Object.fromEntries(LEAD_STATUSES.map((status) => [status, 0])) as Record<LeadStatus, number>;
-    bySegment.forEach((lead) => {
-      counts[statusOf(lead)] += 1;
-    });
-    return counts;
-  }, [bySegment]);
+  function dropOn(status: LeadStatus) {
+    const id = dragId;
+    setDragId(null);
+    setOverColumn(null);
+    if (!id) return;
+    const lead = leads.find((item) => item.id === id);
+    if (!lead || statusOf(lead) === status) return;
+    void saveLead(id, { status }, true);
+  }
 
   const visible = useMemo(() => {
     const term = query.trim().toLowerCase();
-    return bySegment.filter((lead) => {
-      if (statusFilter !== "todos" && statusOf(lead) !== statusFilter) return false;
+    return leads.filter((lead) => {
+      if (segment !== "todos" && normalizeTipo(lead.tipo) !== segment) return false;
       if (!term) return true;
       const contact = contactOf(lead);
       return [lead.nome, lead.empresa_nome, contact.phone, contact.email, lead.observacoes]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(term));
     });
-  }, [bySegment, statusFilter, query]);
+  }, [leads, segment, query]);
+
+  const columns = useMemo(
+    () => LEAD_STATUSES.map((status) => ({ status, cards: visible.filter((lead) => statusOf(lead) === status) })),
+    [visible],
+  );
 
   function exportCsv() {
-    const header = ["Data", "Perfil", "Nome", "Empresa", "WhatsApp", "E-mail", "Volume", "Interesses", "Status", "Anotações"];
+    const header = ["Data", "Perfil", "Nome", "Empresa", "WhatsApp", "E-mail", "Volume", "Interesses", "Etapa", "Anotações"];
     const rows = visible.map((lead) => {
       const contact = contactOf(lead);
       return [
@@ -262,21 +281,45 @@ export function LeadsPanel() {
   const openLead = leads.find((lead) => lead.id === openId) || null;
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-end">
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => void load()}
-            className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-[#00205C] transition hover:bg-gray-50"
-          >
-            <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} /> Atualizar
+    <div
+      className="flex h-[calc(100dvh-4rem)] flex-col overflow-hidden"
+      style={{ background: "linear-gradient(135deg, #00205C 0%, #0B4A8B 45%, #42C8E5 100%)" }}
+    >
+      {/* BARRA DO QUADRO */}
+      <div className="flex shrink-0 flex-wrap items-center gap-2 bg-black/25 px-4 py-2.5 text-white backdrop-blur-sm md:px-5">
+        <h1 className="mr-1 rounded-md px-2 py-1 text-lg font-bold">Leads</h1>
+        <div className="flex items-center gap-1">
+          {SEGMENTS.map((item) => (
+            <button
+              key={item.value}
+              type="button"
+              onClick={() => setSegment(item.value)}
+              className={`rounded-md px-2.5 py-1.5 text-sm font-semibold transition ${
+                segment === item.value ? "bg-white text-[#00205C]" : "text-white/90 hover:bg-white/20"
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+        <div className="ml-auto flex items-center gap-2">
+          <label className="relative hidden sm:block">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-white/70" />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Buscar cartões"
+              className="w-56 rounded-md border border-white/25 bg-white/15 py-1.5 pl-8 pr-3 text-sm text-white outline-none placeholder:text-white/60 focus:bg-white focus:text-[#172B4D] focus:placeholder:text-gray-400"
+            />
+          </label>
+          <button type="button" onClick={() => void load()} title="Atualizar" className="flex size-8 items-center justify-center rounded-md hover:bg-white/20">
+            <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
           </button>
           <button
             type="button"
             onClick={exportCsv}
             disabled={visible.length === 0}
-            className="inline-flex items-center gap-2 rounded-full bg-[#00205C] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#003380] disabled:opacity-40"
+            className="inline-flex items-center gap-1.5 rounded-md bg-white px-3 py-1.5 text-sm font-bold text-[#00205C] transition hover:bg-white/90 disabled:opacity-50"
           >
             <Download className="size-4" /> Exportar
           </button>
@@ -284,195 +327,162 @@ export function LeadsPanel() {
       </div>
 
       {!migrated && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
-          <strong>Falta uma atualização no banco.</strong> Rode no Supabase o arquivo{" "}
-          <code className="rounded bg-white/70 px-1.5 py-0.5 text-xs">supabase/migrations/20261016_leads_empresa_email.sql</code>{" "}
-          para guardar nome da empresa, e-mail e anotações em campos próprios.
+        <div className="shrink-0 bg-amber-100 px-5 py-2 text-xs text-amber-900">
+          Falta rodar no Supabase o arquivo <code className="font-bold">supabase/migrations/20261016_leads_empresa_email.sql</code> para guardar empresa, e-mail e anotações.
         </div>
       )}
+      {error && <div className="shrink-0 bg-red-100 px-5 py-2 text-sm font-semibold text-red-800">{error}</div>}
 
-      {/* RESUMO POR STATUS */}
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
-        <button
-          type="button"
-          onClick={() => setStatusFilter("todos")}
-          className={`rounded-2xl border p-4 text-left transition ${statusFilter === "todos" ? "border-[#00205C] bg-white shadow-sm" : "border-gray-200 bg-white hover:border-gray-300"}`}
-        >
-          <p className="text-[11px] font-bold uppercase text-gray-500">Total</p>
-          <p className="mt-1 text-2xl font-bold text-[#00205C]">{bySegment.length}</p>
-        </button>
-        {LEAD_STATUSES.map((status) => (
-          <button
-            key={status}
-            type="button"
-            onClick={() => setStatusFilter(statusFilter === status ? "todos" : status)}
-            className={`rounded-2xl border p-4 text-left transition ${statusFilter === status ? "border-[#00205C] bg-white shadow-sm" : "border-gray-200 bg-white hover:border-gray-300"}`}
-          >
-            <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase text-gray-500">
-              <span className={`size-1.5 rounded-full ${STATUS_META[status].dot}`} />
-              {STATUS_META[status].label}
-            </p>
-            <p className="mt-1 text-2xl font-bold text-[#00205C]">{statusCounts[status]}</p>
-          </button>
-        ))}
-      </div>
+      {/* COLUNAS */}
+      <div className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden">
+        <div className="flex h-full items-start gap-3 p-3 md:p-4">
+          {columns.map(({ status, cards }) => (
+            <section
+              key={status}
+              onDragOver={(event) => {
+                event.preventDefault();
+                if (overColumn !== status) setOverColumn(status);
+              }}
+              onDragLeave={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOverColumn(null);
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                dropOn(status);
+              }}
+              className={`flex max-h-full w-[272px] shrink-0 flex-col rounded-xl bg-[#101204] text-[#B6C2CF] shadow-md transition ${
+                overColumn === status && dragId ? "ring-2 ring-[#42C8E5]" : ""
+              }`}
+            >
+              <header className="flex items-center gap-2 px-3 pb-2 pt-3">
+                <span className={`h-2 w-2 rounded-full ${COLUMN_ACCENT[status]}`} />
+                <h2 className="flex-1 text-sm font-bold uppercase tracking-wide text-[#DEE4EA]">{STATUS_META[status].label}</h2>
+                <span className="text-sm text-[#9FADBC]">{cards.length}</span>
+              </header>
 
-      <section className="overflow-hidden rounded-[2rem] border border-gray-200 bg-white shadow-sm">
-        {/* FILTROS */}
-        <div className="flex flex-col gap-3 border-b border-gray-100 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <div className="flex flex-wrap gap-1.5">
-            {SEGMENTS.map((item) => (
-              <button
-                key={item.value}
-                type="button"
-                onClick={() => setSegment(item.value)}
-                className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition ${segment === item.value ? "bg-[#00205C] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-          <label className="relative block sm:w-72">
-            <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Buscar nome, empresa, contato…"
-              className="w-full rounded-full border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-4 text-sm outline-none focus:border-[#42C8E5] focus:bg-white"
-            />
-          </label>
-        </div>
+              <div className="min-h-[8px] flex-1 space-y-2 overflow-y-auto px-2 pb-1">
+                {loading && leads.length === 0 && status === "novo" && (
+                  <div className="flex items-center gap-2 px-2 py-3 text-sm text-[#9FADBC]">
+                    <Loader2 className="size-4 animate-spin" /> Carregando…
+                  </div>
+                )}
+                {cards.map((lead) => {
+                  const contact = contactOf(lead);
+                  const tipo = normalizeTipo(lead.tipo);
+                  const label = SEGMENT_LABEL_COLOR[tipo];
+                  const interests = interestsOf(lead);
+                  return (
+                    <article
+                      key={lead.id}
+                      draggable
+                      onDragStart={(event) => {
+                        event.dataTransfer.effectAllowed = "move";
+                        event.dataTransfer.setData("text/plain", lead.id);
+                        setDragId(lead.id);
+                      }}
+                      onDragEnd={() => {
+                        setDragId(null);
+                        setOverColumn(null);
+                      }}
+                      onClick={() => setOpenId(lead.id)}
+                      className={`group cursor-pointer rounded-lg bg-[#22272B] px-3 pb-2 pt-2.5 shadow-[0_1px_1px_#091E4240] ring-[#85B8FF] transition hover:ring-2 ${
+                        dragId === lead.id ? "rotate-2 opacity-50" : ""
+                      } ${savingId === lead.id ? "opacity-70" : ""}`}
+                    >
+                      {label && (
+                        <div className="mb-1.5 flex gap-1">
+                          <span className={`h-2 w-10 rounded ${label.bar}`} title={label.name} />
+                        </div>
+                      )}
+                      <p className="text-sm leading-snug text-[#DEE4EA]">{lead.nome}</p>
+                      {lead.empresa_nome && (
+                        <p className="mt-0.5 flex items-center gap-1 text-xs text-[#9FADBC]">
+                          <Building2 className="size-3" /> {lead.empresa_nome}
+                        </p>
+                      )}
+                      <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-[#9FADBC]">
+                        <span className="inline-flex items-center gap-1" title={dateFormatter.format(new Date(lead.created_at))}>
+                          <Clock className="size-3.5" /> {shortDate.format(new Date(lead.created_at)).replace(".", "")}
+                        </span>
+                        {contact.phone && (
+                          <span className="inline-flex items-center gap-1" title={formatPhone(contact.phone)}>
+                            <MessageCircle className="size-3.5" />
+                          </span>
+                        )}
+                        {contact.email && (
+                          <span className="inline-flex items-center gap-1" title={contact.email}>
+                            <Mail className="size-3.5" />
+                          </span>
+                        )}
+                        {lead.observacoes && (
+                          <span className="inline-flex items-center gap-1" title="Tem anotações">
+                            <AlignLeft className="size-3.5" />
+                          </span>
+                        )}
+                        {interests.length > 0 && (
+                          <span className="inline-flex items-center gap-1" title={interests.join(", ")}>
+                            <CheckSquare className="size-3.5" /> {interests.length}
+                          </span>
+                        )}
+                        {quantityOf(lead) && <span className="truncate">{quantityOf(lead)}</span>}
+                      </div>
+                    </article>
+                  );
+                })}
 
-        {error ? (
-          <p className="p-8 text-center text-sm font-semibold text-red-600">{error}</p>
-        ) : loading && leads.length === 0 ? (
-          <div className="flex items-center justify-center gap-2 p-12 text-sm text-gray-500">
-            <Loader2 className="size-4 animate-spin" /> Carregando leads…
-          </div>
-        ) : visible.length === 0 ? (
-          <div className="p-12 text-center">
-            <p className="font-bold text-[#00205C]">{leads.length === 0 ? "Nenhum lead ainda" : "Nenhum lead com esses filtros"}</p>
-            <p className="mt-1 text-sm text-gray-500">
-              {leads.length === 0 ? "Assim que alguém concluir o chat do site, o cadastro aparece aqui." : "Ajuste os filtros ou a busca."}
-            </p>
-          </div>
-        ) : (
-          <>
-            {/* TABELA (DESKTOP) */}
-            <div className="hidden overflow-x-auto md:block">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-gray-50 text-xs uppercase text-gray-400">
-                  <tr>
-                    <th className="px-6 py-3 font-bold">Data</th>
-                    <th className="px-4 py-3 font-bold">Lead</th>
-                    <th className="px-4 py-3 font-bold">Contato</th>
-                    <th className="px-4 py-3 font-bold">Volume</th>
-                    <th className="px-4 py-3 font-bold">Interesses</th>
-                    <th className="px-6 py-3 font-bold">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {visible.map((lead) => {
-                    const contact = contactOf(lead);
-                    const interests = interestsOf(lead);
-                    return (
-                      <tr
-                        key={lead.id}
-                        onClick={() => setOpenId(lead.id)}
-                        className="cursor-pointer border-t border-gray-100 align-top transition hover:bg-[#42C8E5]/5"
-                      >
-                        <td className="whitespace-nowrap px-6 py-4 text-xs text-gray-500">{dateFormatter.format(new Date(lead.created_at))}</td>
-                        <td className="px-4 py-4">
-                          <p className="font-bold text-[#00205C]">{lead.nome}</p>
-                          <p className="mt-0.5 flex items-center gap-1.5 text-xs text-gray-500">
-                            <span className="font-semibold">{TIPO_LABEL[lead.tipo] || lead.tipo}</span>
-                            {lead.empresa_nome && (
-                              <>
-                                · <Building2 className="size-3" /> {lead.empresa_nome}
-                              </>
-                            )}
-                          </p>
-                        </td>
-                        <td className="px-4 py-4">
-                          {contact.phone && (
-                            <a
-                              href={whatsappLink(contact.phone, lead.nome)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(event) => event.stopPropagation()}
-                              className="flex items-center gap-1.5 whitespace-nowrap font-semibold text-[#00205C] hover:text-emerald-700"
-                            >
-                              <MessageCircle className="size-3.5 text-emerald-600" /> {formatPhone(contact.phone)}
-                            </a>
-                          )}
-                          {contact.email && (
-                            <a
-                              href={`mailto:${contact.email}`}
-                              onClick={(event) => event.stopPropagation()}
-                              className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-[#00205C] hover:underline"
-                            >
-                              <Mail className="size-3.5 text-[#42C8E5]" /> {contact.email}
-                            </a>
-                          )}
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-4 text-gray-600">{quantityOf(lead) || "—"}</td>
-                        <td className="max-w-xs px-4 py-4">
-                          <div className="flex flex-wrap gap-1">
-                            {interests.length ? (
-                              interests.map((interest) => (
-                                <span key={interest} className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-600">
-                                  {interest}
-                                </span>
-                              ))
-                            ) : (
-                              <span className="text-gray-400">—</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <StatusSelect
-                            value={statusOf(lead)}
-                            disabled={savingId === lead.id}
-                            onChange={(status) => void saveLead(lead.id, { status })}
-                          />
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {/* CARTÕES (CELULAR) */}
-            <div className="divide-y divide-gray-100 md:hidden">
-              {visible.map((lead) => {
-                const contact = contactOf(lead);
-                return (
-                  <button
-                    key={lead.id}
-                    type="button"
-                    onClick={() => setOpenId(lead.id)}
-                    className="flex w-full items-start justify-between gap-3 p-4 text-left"
+                {composer === status && (
+                  <form
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      void createCard(status);
+                    }}
                   >
-                    <div className="min-w-0">
-                      <p className="font-bold text-[#00205C]">{lead.nome}</p>
-                      <p className="mt-0.5 truncate text-xs text-gray-500">
-                        {TIPO_LABEL[lead.tipo] || lead.tipo}
-                        {lead.empresa_nome ? ` · ${lead.empresa_nome}` : ""}
-                      </p>
-                      <p className="mt-1 truncate text-xs font-semibold text-[#00205C]">
-                        {contact.phone ? formatPhone(contact.phone) : contact.email}
-                      </p>
-                      <p className="mt-1 text-[11px] text-gray-400">{dateFormatter.format(new Date(lead.created_at))}</p>
+                    <textarea
+                      autoFocus
+                      value={composerText}
+                      onChange={(event) => setComposerText(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" && !event.shiftKey) {
+                          event.preventDefault();
+                          void createCard(status);
+                        }
+                        if (event.key === "Escape") setComposer(null);
+                      }}
+                      rows={2}
+                      placeholder="Nome do lead"
+                      className="w-full resize-none rounded-lg bg-[#22272B] px-3 py-2 text-sm text-[#DEE4EA] shadow outline-none ring-2 ring-[#85B8FF] placeholder:text-[#8C9BAB]"
+                    />
+                    <div className="mt-1.5 flex items-center gap-1">
+                      <button type="submit" disabled={creating} className="rounded bg-[#579DFF] px-3 py-1.5 text-sm font-semibold text-[#1D2125] hover:bg-[#85B8FF] disabled:opacity-60">
+                        {creating ? "Adicionando…" : "Adicionar cartão"}
+                      </button>
+                      <button type="button" onClick={() => setComposer(null)} aria-label="Cancelar" className="flex size-8 items-center justify-center rounded text-[#9FADBC] hover:bg-[#A6C5E229]">
+                        <X className="size-5" />
+                      </button>
                     </div>
-                    <StatusChip status={statusOf(lead)} />
+                  </form>
+                )}
+              </div>
+
+              {composer !== status && (
+                <div className="flex items-center gap-1 p-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setComposer(status);
+                      setComposerText("");
+                    }}
+                    className="flex flex-1 items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium text-[#9FADBC] transition hover:bg-[#A6C5E229] hover:text-[#DEE4EA]"
+                  >
+                    <Plus className="size-4" /> Adicionar um cartão
                   </button>
-                );
-              })}
-            </div>
-          </>
-        )}
-      </section>
+                </div>
+              )}
+            </section>
+          ))}
+          <div className="w-1 shrink-0" />
+        </div>
+      </div>
 
       {openLead && (
         <LeadSheet
@@ -516,6 +526,9 @@ function LeadSheet({
   const [whatsapp, setWhatsapp] = useState(contact.phone ? formatPhone(contact.phone) : "");
   const [email, setEmail] = useState(contact.email);
   const [status, setStatus] = useState<LeadStatus>(statusOf(lead));
+  const [tipo, setTipo] = useState<"cliente" | "empresa" | "clube_nutri">(
+    (["cliente", "empresa", "clube_nutri"].includes(normalizeTipo(lead.tipo)) ? normalizeTipo(lead.tipo) : "cliente") as "cliente" | "empresa" | "clube_nutri",
+  );
   const [observacoes, setObservacoes] = useState(lead.observacoes || "");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [formError, setFormError] = useState("");
@@ -540,6 +553,7 @@ function LeadSheet({
     const patch: LeadPatch = {
       nome: nome.trim(),
       status,
+      tipo,
       whatsapp: whatsapp.trim() || null,
     };
     if (migrated) {
@@ -587,7 +601,7 @@ function LeadSheet({
             </div>
 
             <div>
-              <span className={labelClass}>Status</span>
+              <span className={labelClass}>Etapa</span>
               <div className="flex flex-wrap gap-1.5">
                 {LEAD_STATUSES.map((item) => (
                   <button
@@ -602,11 +616,28 @@ function LeadSheet({
               </div>
             </div>
 
+            <div>
+              <span className={labelClass}>Perfil</span>
+              <div className="flex flex-wrap gap-1.5">
+                {(["cliente", "empresa", "clube_nutri"] as const).map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => setTipo(item)}
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition ${tipo === item ? "bg-[#00205C] text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}
+                  >
+                    <span className={`h-1.5 w-4 rounded ${SEGMENT_LABEL_COLOR[item]!.bar}`} />
+                    {SEGMENT_LABEL_COLOR[item]!.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <label className="block">
               <span className={labelClass}>Nome</span>
               <input value={nome} onChange={(e) => setNome(e.target.value)} className={fieldClass} />
             </label>
-            {(normalizeTipo(lead.tipo) === "empresa" || lead.empresa_nome) && (
+            {(tipo === "empresa" || lead.empresa_nome) && (
               <label className="block">
                 <span className={labelClass}>Empresa</span>
                 <input value={empresa} onChange={(e) => setEmpresa(e.target.value)} disabled={!migrated} className={fieldClass} placeholder="Nome da empresa" />
