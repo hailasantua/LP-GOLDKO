@@ -144,12 +144,7 @@ export function JourneyAnalytics() {
 
   return (
     <section className="flex flex-col">
-      <div className="order-0 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <span className="text-xs font-bold uppercase tracking-widest text-[#ff8515]">Tracking · últimos 30 dias</span>
-          <h1 className="font-display text-3xl font-bold uppercase text-[#00205C]">Visão da Jornada</h1>
-          <p className="mt-1 text-sm text-gray-500">Do primeiro acesso até a geração do lead.</p>
-        </div>
+      <div className="order-0 flex justify-end">
         <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
           <button onClick={() => void load()} disabled={clearing} className="min-h-11 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-bold text-[#00205C] disabled:cursor-not-allowed disabled:opacity-50">Atualizar</button>
           <button onClick={() => void clearData()} disabled={clearing} className="min-h-11 rounded-full border border-red-200 bg-red-50 px-4 py-2 text-xs font-bold text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50">{clearing ? "Limpando…" : "Limpar dados"}</button>

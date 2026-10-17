@@ -263,12 +263,7 @@ export function LeadsPanel() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <span className="text-xs font-bold uppercase tracking-widest text-[#ff8515]">CRM · Cadastros do chat</span>
-          <h1 className="font-display text-2xl font-bold uppercase tracking-wide text-[#00205C] sm:text-3xl">Leads</h1>
-          <p className="mt-1 text-sm text-gray-500">Todos que concluíram o chat do site, com os dados que informaram.</p>
-        </div>
+      <div className="flex justify-end">
         <div className="flex gap-2">
           <button
             type="button"
