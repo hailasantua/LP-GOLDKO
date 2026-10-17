@@ -158,6 +158,11 @@ const BOARD_COLUMNS: { tipo: Tipo; title: string }[] = [
   { tipo: "empresa", title: "Empresas" },
   { tipo: "clube_nutri", title: "Clube Nutri" },
 ];
+const SEGMENT_TOP_STRIP: Record<Tipo, string> = {
+  cliente: "bg-[#42C8E5]",
+  empresa: "bg-[#00205C]",
+  clube_nutri: "bg-[#ff8515]",
+};
 const STATUS_FILTERS: { value: LeadStatus | "todos"; label: string }[] = [
   { value: "todos", label: "Todos" },
   ...LEAD_STATUSES.map((status) => ({ value: status, label: STATUS_META[status].label })),
@@ -298,6 +303,23 @@ export function LeadsPanel() {
     });
   }, [leads, statusFilter, query]);
 
+  const stageCounts = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    const searched = term
+      ? leads.filter((lead) => {
+          const contact = contactOf(lead);
+          return [lead.nome, lead.empresa_nome, contact.phone, contact.email, lead.observacoes]
+            .filter(Boolean)
+            .some((value) => String(value).toLowerCase().includes(term));
+        })
+      : leads;
+    const counts = { total: searched.length } as Record<LeadStatus | "total", number>;
+    LEAD_STATUSES.forEach((status) => {
+      counts[status] = searched.filter((lead) => statusOf(lead) === status).length;
+    });
+    return counts;
+  }, [leads, query]);
+
   const columns = useMemo(
     () =>
       BOARD_COLUMNS.map((column) => ({
@@ -353,28 +375,38 @@ export function LeadsPanel() {
   return (
     <div className="flex h-[calc(100dvh-4rem)] flex-col overflow-hidden bg-[#F8F8F8]">
       {/* BARRA DO QUADRO */}
-      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-gray-200 bg-white px-4 py-2.5 md:px-6">
-        <h1 className="mr-2 font-display text-xl font-bold uppercase tracking-wide text-[#00205C]">
-          Leads
-        </h1>
-        <div className="flex items-center gap-1">
-          {STATUS_FILTERS.map((item) => (
-            <button
-              key={item.value}
-              type="button"
-              onClick={() => setStatusFilter(item.value)}
-              className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition ${
-                statusFilter === item.value
-                  ? "bg-[#00205C] text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
-              {item.value !== "todos" && (
-                <span className={`size-1.5 rounded-full ${COLUMN_ACCENT[item.value]}`} />
-              )}
-              {item.label}
-            </button>
-          ))}
+      <div className="flex shrink-0 flex-wrap items-center gap-3 px-4 pt-5 md:px-6 md:pt-6">
+        <div
+          role="radiogroup"
+          aria-label="Filtrar por etapa"
+          className="flex max-w-full overflow-x-auto rounded-xl border border-gray-200 bg-white p-1 shadow-sm"
+        >
+          {STATUS_FILTERS.map((item) => {
+            const active = statusFilter === item.value;
+            const count = item.value === "todos" ? stageCounts.total : stageCounts[item.value];
+            return (
+              <button
+                key={item.value}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={() => setStatusFilter(item.value)}
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                  active
+                    ? "bg-[#EEF6FB] text-[#00205C] ring-1 ring-[#42C8E5]/50"
+                    : "text-gray-600 hover:bg-gray-50 hover:text-[#00205C]"
+                }`}
+              >
+                {item.value !== "todos" && (
+                  <span className={`size-1.5 rounded-full ${COLUMN_ACCENT[item.value]}`} />
+                )}
+                {item.label}
+                <span className={`tabular-nums ${active ? "text-[#00205C]/60" : "text-gray-400"}`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
         <div className="ml-auto flex items-center gap-2">
           <label className="relative hidden sm:block">
@@ -383,7 +415,7 @@ export function LeadsPanel() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Buscar cartões"
-              className="w-60 rounded-full border border-gray-200 bg-gray-50 py-2 pl-10 pr-4 text-sm outline-none focus:border-[#42C8E5] focus:bg-white"
+              className="w-60 rounded-full border border-gray-200 bg-white py-2 pl-10 pr-4 text-sm outline-none focus:border-[#42C8E5]"
             />
           </label>
           <button
@@ -398,7 +430,7 @@ export function LeadsPanel() {
             type="button"
             onClick={exportCsv}
             disabled={visible.length === 0}
-            className="inline-flex items-center gap-1.5 rounded-full bg-[#00205C] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#003380] disabled:opacity-40"
+            className="inline-flex items-center gap-1.5 rounded-full bg-[#00205C] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#003380] disabled:border disabled:border-gray-200 disabled:bg-white disabled:text-gray-400"
           >
             <Download className="size-4" /> Exportar
           </button>
@@ -406,21 +438,21 @@ export function LeadsPanel() {
       </div>
 
       {!migrated && (
-        <div className="shrink-0 bg-amber-100 px-5 py-2 text-xs text-amber-900">
+        <div className="mx-4 mt-4 shrink-0 rounded-xl bg-amber-100 px-4 py-2 text-xs text-amber-900 md:mx-6">
           Falta rodar no Supabase o arquivo{" "}
           <code className="font-bold">supabase/migrations/20261016_leads_empresa_email.sql</code>{" "}
           para guardar empresa, e-mail e anotações.
         </div>
       )}
       {error && (
-        <div className="shrink-0 bg-red-100 px-5 py-2 text-sm font-semibold text-red-800">
+        <div className="mx-4 mt-4 shrink-0 rounded-xl bg-red-100 px-4 py-2 text-sm font-semibold text-red-800 md:mx-6">
           {error}
         </div>
       )}
 
       {/* COLUNAS */}
       <div className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden">
-        <div className="flex h-full items-start gap-3 p-3 md:p-4">
+        <div className="flex h-full items-start gap-4 p-4 md:gap-5 md:p-6">
           {columns.map(({ status, title, cards }) => (
             <section
               key={status}
@@ -436,12 +468,12 @@ export function LeadsPanel() {
                 event.preventDefault();
                 dropOn(status);
               }}
-              className={`flex max-h-full w-[280px] shrink-0 flex-col rounded-2xl border border-gray-200 bg-[#EFF1F4] transition ${
+              className={`flex max-h-full min-w-[300px] flex-1 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-[#EFF1F4] transition ${
                 overColumn === status && dragId ? "ring-2 ring-[#42C8E5]" : ""
               }`}
             >
-              <header className="flex items-center gap-2 px-3 pb-2 pt-3">
-                <span className={`h-2 w-5 rounded ${SEGMENT_LABEL_COLOR[status]!.bar}`} />
+              <div className={`h-1 shrink-0 ${SEGMENT_TOP_STRIP[status]}`} />
+              <header className="flex items-center gap-2 px-4 pb-2.5 pt-3.5">
                 <h2 className="flex-1 text-xs font-bold uppercase tracking-wide text-[#00205C]">
                   {title}
                 </h2>
@@ -533,6 +565,13 @@ export function LeadsPanel() {
                   );
                 })}
 
+                {!loading && cards.length === 0 && composer !== status && (
+                  <div className="rounded-xl border-[1.5px] border-dashed border-gray-300 px-3 py-6 text-center text-xs font-medium text-gray-400">
+                    {statusFilter === "todos"
+                      ? "Nenhum lead ainda"
+                      : `Nenhum lead ${STATUS_META[statusFilter].label.toLowerCase()} aqui`}
+                  </div>
+                )}
                 {composer === status && (
                   <form
                     onSubmit={(event) => {
