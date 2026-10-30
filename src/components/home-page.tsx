@@ -211,10 +211,19 @@ export function HomePage({
         .select("content")
         .eq("id", activePageId)
         .maybeSingle();
-      if (error || !data?.content) {
-        return defaultSiteContent;
+      if (!error && data?.content && Object.keys(data.content).length > 0) {
+        return mergeSiteContent(data.content);
       }
-      return mergeSiteContent(data.content);
+      // Página de loja ainda não salva no painel: usa o conteúdo da principal.
+      if (activePageId !== "main") {
+        const { data: mainData } = await supabase
+          .from("site_content")
+          .select("content")
+          .eq("id", "main")
+          .maybeSingle();
+        if (mainData?.content) return mergeSiteContent(mainData.content);
+      }
+      return defaultSiteContent;
     },
   });
 

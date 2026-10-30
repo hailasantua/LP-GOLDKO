@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ContatoRouteImport } from './routes/contato'
 import { Route as ConteudoRouteImport } from './routes/conteudo'
+import { Route as FlamboyantRouteImport } from './routes/flamboyant'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as PainelRouteImport } from './routes/painel'
 
@@ -30,6 +31,11 @@ const ConteudoRoute = ConteudoRouteImport.update({
   path: '/conteudo',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FlamboyantRoute = FlamboyantRouteImport.update({
+  id: '/flamboyant',
+  path: '/flamboyant',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
@@ -45,6 +51,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/contato': typeof ContatoRoute
   '/conteudo': typeof ConteudoRoute
+  '/flamboyant': typeof FlamboyantRoute
   '/onboarding': typeof OnboardingRoute
   '/painel': typeof PainelRoute
 }
@@ -52,6 +59,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/contato': typeof ContatoRoute
   '/conteudo': typeof ConteudoRoute
+  '/flamboyant': typeof FlamboyantRoute
   '/onboarding': typeof OnboardingRoute
   '/painel': typeof PainelRoute
 }
@@ -60,21 +68,31 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/contato': typeof ContatoRoute
   '/conteudo': typeof ConteudoRoute
+  '/flamboyant': typeof FlamboyantRoute
   '/onboarding': typeof OnboardingRoute
   '/painel': typeof PainelRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/contato' | '/conteudo' | '/onboarding' | '/painel'
+  fullPaths:
+    '/' | '/contato' | '/conteudo' | '/flamboyant' | '/onboarding' | '/painel'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/contato' | '/conteudo' | '/onboarding' | '/painel'
-  id: '__root__' | '/' | '/contato' | '/conteudo' | '/onboarding' | '/painel'
+  to: '/' | '/contato' | '/conteudo' | '/flamboyant' | '/onboarding' | '/painel'
+  id:
+    | '__root__'
+    | '/'
+    | '/contato'
+    | '/conteudo'
+    | '/flamboyant'
+    | '/onboarding'
+    | '/painel'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ContatoRoute: typeof ContatoRoute
   ConteudoRoute: typeof ConteudoRoute
+  FlamboyantRoute: typeof FlamboyantRoute
   OnboardingRoute: typeof OnboardingRoute
   PainelRoute: typeof PainelRoute
 }
@@ -102,6 +120,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConteudoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/flamboyant': {
+      id: '/flamboyant'
+      path: '/flamboyant'
+      fullPath: '/flamboyant'
+      preLoaderRoute: typeof FlamboyantRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/onboarding': {
       id: '/onboarding'
       path: '/onboarding'
@@ -123,6 +148,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ContatoRoute: ContatoRoute,
   ConteudoRoute: ConteudoRoute,
+  FlamboyantRoute: FlamboyantRoute,
   OnboardingRoute: OnboardingRoute,
   PainelRoute: PainelRoute,
 }

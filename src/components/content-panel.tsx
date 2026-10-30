@@ -163,6 +163,14 @@ interface PageItem {
   updatedAt?: string;
 }
 
+const STORE_PAGES = [{ id: "flamboyant", title: "GoldKo Flamboyant" }];
+
+function pagePublicUrl(pageId: string | null) {
+  if (!pageId || pageId === "main") return "/";
+  if (STORE_PAGES.some((sp) => sp.id === pageId)) return `/${pageId}`;
+  return `/?p=${pageId}`;
+}
+
 export function ContentPanel() {
   const [user, setUser] = useState<User | null>(null);
   const [checking, setChecking] = useState(true);
@@ -449,13 +457,25 @@ export function ContentPanel() {
       });
     }
 
+    // Páginas das lojas sempre aparecem, mesmo antes de salvar.
+    for (const store of STORE_PAGES) {
+      if (!list.some((p) => p.id === store.id)) {
+        list.splice(1, 0, {
+          id: store.id,
+          title: store.title,
+          image: "/marcar-goldko.jpg",
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    }
+
     setPagesList(list);
   }
 
   // Carrega conteúdo da página ativa
   async function loadPageContent(pageId: string) {
     setLoadingCurrentPage(true);
-    const { data, error } = await supabase
+    const { data: row, error } = await supabase
       .from("site_content")
       .select("content")
       .eq("id", pageId)
@@ -463,7 +483,18 @@ export function ContentPanel() {
 
     setLoadingCurrentPage(false);
 
-    if (error || !data?.content) {
+    let data = row;
+    // Loja ainda não salva: começa como cópia da página principal.
+    if ((error || !data?.content) && STORE_PAGES.some((sp) => sp.id === pageId)) {
+      const { data: mainData } = await supabase
+        .from("site_content")
+        .select("content")
+        .eq("id", "main")
+        .maybeSingle();
+      data = mainData?.content ? mainData : { content: defaultSiteContent as never };
+    }
+
+    if (!data?.content) {
       const initial =
         pageId === "main"
           ? defaultSiteContent
@@ -1195,7 +1226,7 @@ export function ContentPanel() {
 
           {/* Ver Página Pública */}
           <a
-            href={currentPageId === "main" ? "/" : `/?p=${currentPageId}`}
+            href={pagePublicUrl(currentPageId)}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex size-9 items-center justify-center rounded-full border border-white/20 text-white/80 transition hover:bg-white/10 hover:text-white"
