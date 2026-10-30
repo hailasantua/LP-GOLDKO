@@ -17,6 +17,7 @@ const createChatLeadSchema = z
     tipo: z.enum(["cliente", "clube_nutri", "empresa"]),
     quantidade: z.string().trim().min(1).max(100),
     interesses: z.array(z.string().trim().min(1).max(100)).max(10),
+    loja: z.enum(["flamboyant", "buriti", "principal"]).optional(),
   })
   .refine((data) => Boolean(data.whatsapp || data.email), {
     message: "Informe um WhatsApp ou um e-mail",
@@ -46,17 +47,23 @@ export const createChatLeadServerFn = createServerFn({ method: "POST" })
     };
 
     // Com a migração 20261016 aplicada: empresa e e-mail em colunas próprias.
-    const full = await supabaseAdmin
+    const fullRow = {
+      ...base,
+      nome: data.nome,
+      empresa_nome: data.empresa ?? null,
+      email: data.email ?? null,
+      whatsapp: data.whatsapp ?? null,
+    };
+    let full = await supabaseAdmin
       .from("leads_onboarding")
-      .insert({
-        ...base,
-        nome: data.nome,
-        empresa_nome: data.empresa ?? null,
-        email: data.email ?? null,
-        whatsapp: data.whatsapp ?? null,
-      })
+      .insert({ ...fullRow, loja: data.loja ?? "principal" } as never)
       .select("*")
       .single();
+
+    // Sem a migração 20261030 (coluna loja): grava sem a loja para não perder o lead.
+    if (full.error && ["42703", "PGRST204"].includes(full.error.code ?? "")) {
+      full = await supabaseAdmin.from("leads_onboarding").insert(fullRow).select("*").single();
+    }
 
     if (!full.error) return full.data;
 

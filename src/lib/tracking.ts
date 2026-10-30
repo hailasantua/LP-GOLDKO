@@ -45,3 +45,21 @@ export function trackEvent(event: string, properties: TrackingProperties = {}) {
 export function trackedClick(event: string, label: string, destination: string) {
   return () => trackEvent(event, { label, destination });
 }
+
+export type StoreId = "flamboyant" | "buriti" | "principal";
+export const STORES: Array<{ id: StoreId; label: string; path: string }> = [
+  { id: "flamboyant", label: "Flamboyant", path: "/flamboyant" },
+  { id: "buriti", label: "Buriti", path: "/buriti" },
+  { id: "principal", label: "Principal", path: "/" },
+];
+
+/** Loja da página atual, pelo caminho da URL. */
+export function storeFromPath(path: string | null | undefined): StoreId {
+  const first = (path || "/").split("/").filter(Boolean)[0]?.toLowerCase();
+  if (first === "flamboyant" || first === "buriti") return first;
+  return "principal";
+}
+
+export function currentStore(): StoreId {
+  return storeFromPath(typeof window === "undefined" ? "/" : window.location.pathname);
+}

@@ -9,7 +9,7 @@ const eventSchema = z.object({
   utm_campaign: z.string().max(200).nullable().optional(), metadata: z.record(z.union([z.string(), z.number(), z.boolean(), z.null()])).default({}),
 });
 export type AnalyticsEventRow = z.infer<typeof eventSchema> & { id: string; created_at: string };
-export type JourneyLeadRow = { created_at: string; segment: "cliente" | "clube_nutri" | "empresa" | "eventos" };
+export type JourneyLeadRow = { created_at: string; segment: "cliente" | "clube_nutri" | "empresa" | "eventos"; loja?: string | null };
 
 export const recordAnalyticsEvent = createServerFn({ method: "POST" })
   .validator((data) => eventSchema.parse(data))
@@ -50,9 +50,19 @@ export const getAnalyticsEvents = createServerFn({ method: "POST" })
       return { data: rows, error: null };
     }
 
+    // Com a migração 20261030 traz a loja; sem ela, cai para a consulta antiga.
+    async function fetchOnboarding() {
+      const withStore = await supabaseAdmin
+        .from("leads_onboarding")
+        .select("created_at,tipo,loja" as "created_at,tipo")
+        .gte("created_at", since);
+      if (!withStore.error) return withStore;
+      return supabaseAdmin.from("leads_onboarding").select("created_at,tipo").gte("created_at", since);
+    }
+
     const [eventsResult, onboardingResult, contactResult] = await Promise.all([
       fetchAllEvents(),
-      supabaseAdmin.from("leads_onboarding").select("created_at,tipo").gte("created_at", since),
+      fetchOnboarding(),
       supabaseAdmin.from("leads").select("created_at,interest,message").gte("created_at", since),
     ]);
     if (eventsResult.error) console.error("Falha ao buscar eventos analíticos:", eventsResult.error);
@@ -61,6 +71,7 @@ export const getAnalyticsEvents = createServerFn({ method: "POST" })
     const onboardingLeads: JourneyLeadRow[] = (onboardingResult.data || []).map((lead) => ({
       created_at: lead.created_at,
       segment: lead.tipo === "nutricionista" ? "clube_nutri" : lead.tipo as JourneyLeadRow["segment"],
+      loja: ((lead as Record<string, unknown>)["loja"] as string | undefined) ?? null,
     }));
     const contactLeads: JourneyLeadRow[] = (contactResult.data || []).map((lead) => ({
       created_at: lead.created_at,

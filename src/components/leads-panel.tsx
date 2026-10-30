@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   CheckCircle2,
+  ChevronDown,
   Download,
   Loader2,
   Mail,
@@ -9,10 +10,12 @@ import {
   Plus,
   RefreshCw,
   Search,
+  Store,
   Trash2,
   X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { STORES, type StoreId } from "@/lib/tracking";
 import {
   createManualLead,
   deleteChatLead,
@@ -71,6 +74,12 @@ const INTEREST_LABELS: Record<string, string> = {
   tabela_nutricional: "Tabela nutricional",
   tabela_calorias: "Tabela de calorias",
 };
+
+const STORE_LABEL: Record<StoreId, string> = Object.fromEntries(
+  STORES.map((store) => [store.id, store.label]),
+) as Record<StoreId, string>;
+const storeOf = (lead: ChatLeadRow): StoreId =>
+  lead.loja === "flamboyant" || lead.loja === "buriti" ? lead.loja : "principal";
 
 const normalizeTipo = (tipo: string) => (tipo === "nutricionista" ? "clube_nutri" : tipo);
 const isStatus = (value: string): value is LeadStatus =>
@@ -173,6 +182,8 @@ export function LeadsPanel() {
   const [error, setError] = useState("");
   const [statusFilter, setStatusFilter] = useState<LeadStatus | "todos">("todos");
   const [query, setQuery] = useState("");
+  const [storeFilter, setStoreFilter] = useState<StoreId | "todas">("todas");
+  const [lojaMigrated, setLojaMigrated] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [toast, setToast] = useState("");
@@ -189,6 +200,7 @@ export function LeadsPanel() {
       const result = await listChatLeads({ data: { accessToken: await getToken() } });
       setLeads(result.leads);
       setMigrated(result.migrated);
+      setLojaMigrated(result.lojaMigrated);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível carregar os leads.");
     } finally {
@@ -269,6 +281,7 @@ export function LeadsPanel() {
         status,
         observacoes: null,
         utm_source: "manual",
+        loja: null,
       };
       setLeads((list) => [card, ...list]);
       setComposerText("");
@@ -292,6 +305,7 @@ export function LeadsPanel() {
   const visible = useMemo(() => {
     const term = query.trim().toLowerCase();
     return leads.filter((lead) => {
+      if (storeFilter !== "todas" && storeOf(lead) !== storeFilter) return false;
       if (statusFilter !== "todos" && statusOf(lead) !== statusFilter) return false;
       if (!term) return true;
       const contact = contactOf(lead);
@@ -299,24 +313,26 @@ export function LeadsPanel() {
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(term));
     });
-  }, [leads, statusFilter, query]);
+  }, [leads, statusFilter, query, storeFilter]);
 
   const stageCounts = useMemo(() => {
     const term = query.trim().toLowerCase();
+    const byStore =
+      storeFilter === "todas" ? leads : leads.filter((lead) => storeOf(lead) === storeFilter);
     const searched = term
-      ? leads.filter((lead) => {
+      ? byStore.filter((lead) => {
           const contact = contactOf(lead);
           return [lead.nome, lead.empresa_nome, contact.phone, contact.email, lead.observacoes]
             .filter(Boolean)
             .some((value) => String(value).toLowerCase().includes(term));
         })
-      : leads;
+      : byStore;
     const counts = { total: searched.length } as Record<LeadStatus | "total", number>;
     LEAD_STATUSES.forEach((status) => {
       counts[status] = searched.filter((lead) => statusOf(lead) === status).length;
     });
     return counts;
-  }, [leads, query]);
+  }, [leads, query, storeFilter]);
 
   const columns = useMemo(
     () =>
@@ -332,6 +348,7 @@ export function LeadsPanel() {
     const header = [
       "Data",
       "Perfil",
+      "Loja",
       "Nome",
       "Empresa",
       "WhatsApp",
@@ -346,6 +363,7 @@ export function LeadsPanel() {
       return [
         dateFormatter.format(new Date(lead.created_at)),
         TIPO_LABEL[lead.tipo] || lead.tipo,
+        STORE_LABEL[storeOf(lead)],
         lead.nome,
         lead.empresa_nome || "",
         formatPhone(contact.phone),
@@ -407,6 +425,27 @@ export function LeadsPanel() {
           })}
         </div>
         <div className="ml-auto flex items-center gap-2">
+          <label className="relative">
+            <Store className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
+            <select
+              value={storeFilter}
+              onChange={(event) => setStoreFilter(event.target.value as StoreId | "todas")}
+              aria-label="Filtrar por loja"
+              className={`appearance-none rounded-full border bg-white py-2 pl-9 pr-8 text-sm font-semibold outline-none focus:border-[#42C8E5] ${
+                storeFilter === "todas"
+                  ? "border-gray-200 text-gray-600"
+                  : "border-[#42C8E5]/60 bg-[#EEF6FB] text-[#00205C]"
+              }`}
+            >
+              <option value="todas">Todas as lojas</option>
+              {STORES.map((store) => (
+                <option key={store.id} value={store.id}>
+                  {store.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
+          </label>
           <label className="relative hidden sm:block">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
             <input
@@ -440,6 +479,13 @@ export function LeadsPanel() {
           Falta rodar no Supabase o arquivo{" "}
           <code className="font-bold">supabase/migrations/20261016_leads_empresa_email.sql</code>{" "}
           para guardar empresa, e-mail e anotações.
+        </div>
+      )}
+      {!lojaMigrated && (
+        <div className="mx-4 mt-4 shrink-0 rounded-xl bg-amber-100 px-4 py-2 text-xs text-amber-900 md:mx-6">
+          Falta rodar no Supabase o arquivo{" "}
+          <code className="font-bold">supabase/migrations/20261030_leads_loja.sql</code> para saber
+          de qual loja veio cada lead.
         </div>
       )}
       {error && (
@@ -560,6 +606,12 @@ export function LeadsPanel() {
                             <span className={`size-3.5 rounded ${COLUMN_ACCENT[stage]}`} />
                             {STATUS_META[stage].label}
                           </span>
+                          {storeOf(lead) !== "principal" && (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-[#EEF6FB] px-2 py-1 text-sm text-[#00205C]">
+                              <Store className="size-3.5 text-[#42C8E5]" />
+                              {STORE_LABEL[storeOf(lead)]}
+                            </span>
+                          )}
                         </div>
 
                         <div className="mt-3 flex items-center justify-between gap-2">

@@ -7,6 +7,7 @@ import {
   type JourneyLeadRow,
 } from "@/lib/analytics.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { STORES, storeFromPath, type StoreId } from "@/lib/tracking";
 
 type Period = 7 | 30 | 90;
 const PERIODS: Period[] = [7, 30, 90];
@@ -184,8 +185,9 @@ function Panel({
 
 export function JourneyAnalytics({ onOpenLeads }: { onOpenLeads?: () => void }) {
   const [period, setPeriod] = useState<Period>(30);
-  const [events, setEvents] = useState<AnalyticsEventRow[]>([]);
-  const [leads, setLeads] = useState<JourneyLeadRow[]>([]);
+  const [store, setStore] = useState<StoreId | "todas">("todas");
+  const [allEvents, setEvents] = useState<AnalyticsEventRow[]>([]);
+  const [allLeads, setLeads] = useState<JourneyLeadRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [clearing, setClearing] = useState(false);
   const [error, setError] = useState("");
@@ -249,6 +251,14 @@ export function JourneyAnalytics({ onOpenLeads }: { onOpenLeads?: () => void }) 
   const { current, previous } = useMemo(() => {
     const split = Date.now() - period * DAY;
     const inCurrent = (date: string) => new Date(date).getTime() >= split;
+    const events =
+      store === "todas"
+        ? allEvents
+        : allEvents.filter((event) => storeFromPath(event.page_path) === store);
+    const leads =
+      store === "todas"
+        ? allLeads
+        : allLeads.filter((lead) => (lead.loja || "principal") === store);
     return {
       current: summarize(
         events.filter((event) => inCurrent(event.created_at)),
@@ -259,7 +269,7 @@ export function JourneyAnalytics({ onOpenLeads }: { onOpenLeads?: () => void }) 
         leads.filter((lead) => !inCurrent(lead.created_at)),
       ),
     };
-  }, [events, leads, period]);
+  }, [allEvents, allLeads, period, store]);
 
   const heroSteps = [
     { label: "Abriram o chat", value: current.hero.opened },
@@ -313,6 +323,23 @@ export function JourneyAnalytics({ onOpenLeads }: { onOpenLeads?: () => void }) 
             </button>
           ))}
         </div>
+        <select
+          value={store}
+          onChange={(event) => setStore(event.target.value as StoreId | "todas")}
+          aria-label="Filtrar por loja"
+          className={`rounded-xl border bg-white px-3 py-2 text-xs font-semibold shadow-sm outline-none focus:border-[#42C8E5] ${
+            store === "todas"
+              ? "border-gray-200 text-gray-600"
+              : "border-[#42C8E5]/60 bg-[#EEF6FB] text-[#00205C]"
+          }`}
+        >
+          <option value="todas">Todas as lojas</option>
+          {STORES.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.label}
+            </option>
+          ))}
+        </select>
         <div className="ml-auto flex items-center gap-2">
           <button
             type="button"
@@ -382,7 +409,7 @@ export function JourneyAnalytics({ onOpenLeads }: { onOpenLeads?: () => void }) 
         </div>
       )}
 
-      {loading && events.length === 0 ? (
+      {loading && allEvents.length === 0 ? (
         <div className="flex items-center justify-center gap-2 py-24 text-sm font-semibold text-gray-500">
           <Loader2 className="size-4 animate-spin" /> Carregando a jornada dos visitantes…
         </div>

@@ -22,6 +22,7 @@ export type ChatLeadRow = {
   status: string;
   observacoes: string | null;
   utm_source: string | null;
+  loja: string | null;
 };
 
 const tokenSchema = z.object({ accessToken: z.string().min(20) });
@@ -72,8 +73,10 @@ export const listChatLeads = createServerFn({ method: "POST" })
       status: String(row["status"] ?? "novo"),
       observacoes: (row["observacoes"] as string | null | undefined) ?? null,
       utm_source: (row["utm_source"] as string | null | undefined) ?? null,
+      loja: (row["loja"] as string | null | undefined) ?? null,
     }));
-    return { leads, migrated };
+    const lojaMigrated = list.length === 0 || "loja" in list[0]!;
+    return { leads, migrated, lojaMigrated };
   });
 
 const nullableText = (max: number) =>

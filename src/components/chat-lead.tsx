@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Send, ChevronRight, Check, Loader2, FileText, ExternalLink, MessageCircle } from "lucide-react";
 import { CloseButton, GoldkoAvatar } from "@/components/goldko-sheet";
 import { createChatLeadServerFn } from "@/lib/chat-leads.functions";
-import { trackEvent } from "@/lib/tracking";
+import { trackEvent, currentStore } from "@/lib/tracking";
 
 export type Segment = "cliente" | "empresa" | "clube_nutri";
 
@@ -583,6 +583,7 @@ export function ChatLead({
           tipo: finalLead.segment!,
           quantidade: finalLead.qty,
           interesses: finalLead.interests,
+          loja: currentStore(),
         },
       });
       trackEvent("funnel_completed", { source: trackingSource, segment: finalLead.segment });
