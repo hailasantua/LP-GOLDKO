@@ -15,9 +15,9 @@ import {
 } from "lucide-react";
 import type { CustomerMenuLabels } from "@/lib/site-content";
 import { GoldkoSheet, SheetHeader } from "@/components/goldko-sheet";
-import { trackEvent } from "@/lib/tracking";
+import { trackEvent, currentStore, storeWhatsAppUrl } from "@/lib/tracking";
+import { createFeedbackServerFn } from "@/lib/chat-leads.functions";
 
-const STORE_WHATSAPP = "https://wa.me/5562992358894";
 type CustomerAction = {
   key: keyof CustomerMenuLabels;
   icon: typeof Store;
@@ -78,7 +78,7 @@ export function CustomerMenuModal({ open, onClose, trackingSource = "help_card",
 
   function openWhatsApp(text?: string) {
     const suffix = text ? `?text=${encodeURIComponent(text)}` : "";
-    window.open(`${STORE_WHATSAPP}${suffix}`, "_blank", "noopener,noreferrer");
+    window.open(`${storeWhatsAppUrl()}${suffix}`, "_blank", "noopener,noreferrer");
   }
 
   function handleAction(item: CustomerAction, label: string) {
@@ -108,6 +108,14 @@ export function CustomerMenuModal({ open, onClose, trackingSource = "help_card",
   function submitFeedback(event: FormEvent) {
     event.preventDefault();
     if (!message.trim()) return;
+    void createFeedbackServerFn({
+      data: {
+        nome: name.trim() || undefined,
+        telefone: phone.trim() || undefined,
+        mensagem: message.trim(),
+        loja: currentStore(),
+      },
+    }).catch((err) => console.error("Falha ao salvar sugestão no CRM:", err));
     openWhatsApp(
       [
         "Olá! Quero enviar uma sugestão ou reclamação para a GoldKo.",
@@ -201,7 +209,7 @@ export function CustomerMenuModal({ open, onClose, trackingSource = "help_card",
                 <textarea required rows={5} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Escreva sua sugestão ou reclamação" className="w-full resize-none rounded-xl border border-gray-200 px-4 py-3 text-base outline-none focus:border-[#42C8E5]" />
               </div>
               <button type="submit" disabled={!message.trim()} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#00205C] px-5 py-3 font-bold text-white transition hover:bg-[#003380] disabled:bg-[#00205C]/25">
-                <Send className="size-4" /> Enviar pelo WhatsApp
+                <Send className="size-4" /> Enviar
               </button>
             </form>
           </div>

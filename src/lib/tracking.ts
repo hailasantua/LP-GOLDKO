@@ -63,3 +63,15 @@ export function storeFromPath(path: string | null | undefined): StoreId {
 export function currentStore(): StoreId {
   return storeFromPath(typeof window === "undefined" ? "/" : window.location.pathname);
 }
+
+/** WhatsApp de cada loja (só dígitos, com 55 + DDD). */
+const STORE_WHATSAPP_NUMBERS: Record<StoreId, string> = {
+  flamboyant: "5562994311333",
+  buriti: "5564993396331",
+  principal: "5562992358894",
+};
+
+/** Link wa.me da loja da página atual. */
+export function storeWhatsAppUrl(): string {
+  return `https://wa.me/${STORE_WHATSAPP_NUMBERS[currentStore()]}`;
+}

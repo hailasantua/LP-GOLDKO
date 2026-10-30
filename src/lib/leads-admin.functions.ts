@@ -90,7 +90,7 @@ const nullableText = (max: number) =>
 
 const patchSchema = z.object({
   status: z.enum(LEAD_STATUSES).optional(),
-  tipo: z.enum(["cliente", "empresa", "clube_nutri"]).optional(),
+  tipo: z.enum(["cliente", "empresa", "clube_nutri", "sugestao"]).optional(),
   nome: z.string().trim().min(2).max(120).optional(),
   empresa_nome: nullableText(160),
   whatsapp: nullableText(20),
@@ -155,7 +155,7 @@ export const deleteChatLead = createServerFn({ method: "POST" })
 const createSchema = tokenSchema.extend({
   nome: z.string().trim().min(2).max(120),
   status: z.enum(LEAD_STATUSES),
-  tipo: z.enum(["cliente", "empresa", "clube_nutri"]).default("cliente"),
+  tipo: z.enum(["cliente", "empresa", "clube_nutri", "sugestao"]).default("cliente"),
 });
 
 /** Cartão criado à mão no quadro (ex.: contato que chegou por telefone ou na loja). */

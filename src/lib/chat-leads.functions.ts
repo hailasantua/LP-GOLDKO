@@ -92,3 +92,53 @@ export const createChatLeadServerFn = createServerFn({ method: "POST" })
 
     return legacy.data;
   });
+
+const feedbackSchema = z.object({
+  nome: optionalText(120),
+  telefone: z
+    .string()
+    .optional()
+    .transform((value) => (value ? value.replace(/\D/g, "") : undefined))
+    .pipe(z.string().max(15).optional()),
+  mensagem: z.string().trim().min(1, "Escreva sua mensagem").max(4000),
+  loja: z.enum(["flamboyant", "buriti", "principal"]).optional(),
+});
+
+// Sugestão ou reclamação: fica salva no CRM (perfil "sugestao") antes de abrir o WhatsApp.
+export const createFeedbackServerFn = createServerFn({ method: "POST" })
+  .validator((data) => feedbackSchema.parse(data))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const row = {
+      tipo: "sugestao",
+      status: "novo",
+      nome: data.nome || "Anônimo",
+      whatsapp: data.telefone || null,
+      observacoes: data.mensagem,
+      utm_source: "feedback",
+      loja: data.loja ?? "principal",
+    };
+
+    const first = await supabaseAdmin.from("leads_onboarding").insert(row as never).select("id").single();
+    if (!first.error) return { success: true };
+
+    // Banco sem a migração 20261030: guarda como cliente, com a mensagem nas anotações.
+    console.warn("Sugestão salva no formato antigo:", first.error.message);
+    const fallback = await supabaseAdmin
+      .from("leads_onboarding")
+      .insert({
+        tipo: "cliente",
+        status: "novo",
+        nome: data.nome || "Anônimo",
+        whatsapp: data.telefone || "",
+        utm_source: "feedback",
+        observacoes: `[Sugestão/Reclamação] ${data.mensagem}`,
+      } as never)
+      .select("id")
+      .single();
+    if (fallback.error) {
+      console.error("Erro ao salvar sugestão:", fallback.error);
+      throw new Error("Não foi possível salvar a mensagem.");
+    }
+    return { success: true };
+  });

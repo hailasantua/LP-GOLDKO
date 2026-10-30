@@ -56,6 +56,7 @@ const TIPO_LABEL: Record<string, string> = {
   empresa: "Empresa",
   clube_nutri: "Clube Nutri",
   nutricionista: "Clube Nutri",
+  sugestao: "Sugestão/Reclamação",
 };
 
 const INTEREST_LABELS: Record<string, string> = {
@@ -147,6 +148,7 @@ const SEGMENT_LABEL_COLOR: Record<string, { bar: string; name: string }> = {
   cliente: { bar: "bg-[#42C8E5]", name: "Cliente" },
   empresa: { bar: "bg-[#00205C]", name: "Empresa" },
   clube_nutri: { bar: "bg-[#ff8515]", name: "Clube Nutri" },
+  sugestao: { bar: "bg-[#E8604C]", name: "Sugestão" },
 };
 
 const COLUMN_ACCENT: Record<LeadStatus, string> = {
@@ -159,16 +161,18 @@ const COLUMN_ACCENT: Record<LeadStatus, string> = {
 
 const shortDate = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" });
 
-type Tipo = "cliente" | "empresa" | "clube_nutri";
+type Tipo = "cliente" | "empresa" | "clube_nutri" | "sugestao";
 const BOARD_COLUMNS: { tipo: Tipo; title: string }[] = [
   { tipo: "cliente", title: "Clientes" },
   { tipo: "empresa", title: "Empresas" },
   { tipo: "clube_nutri", title: "Clube Nutri" },
+  { tipo: "sugestao", title: "Sugestões e reclamações" },
 ];
 const SEGMENT_TOP_STRIP: Record<Tipo, string> = {
   cliente: "bg-[#42C8E5]",
   empresa: "bg-[#00205C]",
   clube_nutri: "bg-[#ff8515]",
+  sugestao: "bg-[#E8604C]",
 };
 const STATUS_FILTERS: { value: LeadStatus | "todos"; label: string }[] = [
   { value: "todos", label: "Todos" },
@@ -598,6 +602,11 @@ export function LeadsPanel() {
                                 {lead.empresa_nome}
                               </p>
                             )}
+                            {normalizeTipo(lead.tipo) === "sugestao" && lead.observacoes && (
+                              <p className="mt-1 line-clamp-3 text-sm text-gray-600">
+                                {lead.observacoes}
+                              </p>
+                            )}
                           </div>
                         </div>
 
@@ -759,10 +768,10 @@ function LeadSheet({
   const [whatsapp, setWhatsapp] = useState(contact.phone ? formatPhone(contact.phone) : "");
   const [email, setEmail] = useState(contact.email);
   const [status, setStatus] = useState<LeadStatus>(statusOf(lead));
-  const [tipo, setTipo] = useState<"cliente" | "empresa" | "clube_nutri">(
-    (["cliente", "empresa", "clube_nutri"].includes(normalizeTipo(lead.tipo))
+  const [tipo, setTipo] = useState<Tipo>(
+    (["cliente", "empresa", "clube_nutri", "sugestao"].includes(normalizeTipo(lead.tipo))
       ? normalizeTipo(lead.tipo)
-      : "cliente") as "cliente" | "empresa" | "clube_nutri",
+      : "cliente") as Tipo,
   );
   const [observacoes, setObservacoes] = useState(lead.observacoes || "");
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -875,7 +884,7 @@ function LeadSheet({
             <div>
               <span className={labelClass}>Perfil</span>
               <div className="flex flex-wrap gap-1.5">
-                {(["cliente", "empresa", "clube_nutri"] as const).map((item) => (
+                {(["cliente", "empresa", "clube_nutri", "sugestao"] as const).map((item) => (
                   <button
                     key={item}
                     type="button"

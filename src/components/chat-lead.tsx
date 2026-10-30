@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Send, ChevronRight, Check, Loader2, FileText, ExternalLink, MessageCircle } from "lucide-react";
 import { CloseButton, GoldkoAvatar } from "@/components/goldko-sheet";
-import { createChatLeadServerFn } from "@/lib/chat-leads.functions";
-import { trackEvent, currentStore } from "@/lib/tracking";
+import { createChatLeadServerFn, createFeedbackServerFn } from "@/lib/chat-leads.functions";
+import { trackEvent, currentStore, storeWhatsAppUrl } from "@/lib/tracking";
 
 export type Segment = "cliente" | "empresa" | "clube_nutri";
 
@@ -33,7 +33,6 @@ const SEGMENTS: { value: Segment; label: string }[] = [
   { value: "clube_nutri", label: "Clube Nutri" },
 ];
 
-const STORE_WHATSAPP = "https://wa.me/5562992358894";
 const FIDELITY_URL = "https://app.fidelo.com.br/getpass/eavFmj?utm_source=qr";
 const NUTRI_CATALOG_URL = "/documentos/catalogo-nutricional-goldko.pdf";
 const NUTRI_CALORIES_URL = "/documentos/tabela-de-calorias-goldko.pdf";
@@ -462,13 +461,13 @@ export function ChatLead({
       addUserMsg(option?.label || value);
 
       if (value === "store") {
-        window.open(STORE_WHATSAPP, "_blank", "noopener,noreferrer");
+        window.open(storeWhatsAppUrl(), "_blank", "noopener,noreferrer");
         pushBot("Abrimos o WhatsApp da loja para você. Se não abriu, permita a abertura de uma nova guia.");
         return;
       }
       if (value === "delivery") {
         const message = encodeURIComponent("Olá! Preciso de ajuda com pedidos e entregas da GoldKo.");
-        window.open(`${STORE_WHATSAPP}?text=${message}`, "_blank", "noopener,noreferrer");
+        window.open(`${storeWhatsAppUrl()}?text=${message}`, "_blank", "noopener,noreferrer");
         pushBot("Abrimos o atendimento de pedidos e entregas no WhatsApp.");
         return;
       }
@@ -631,13 +630,21 @@ export function ChatLead({
     (event: React.FormEvent) => {
       event.preventDefault();
       if (!feedbackMessage.trim()) return;
+      void createFeedbackServerFn({
+        data: {
+          nome: feedbackName.trim() || undefined,
+          telefone: feedbackPhone.trim() || undefined,
+          mensagem: feedbackMessage.trim(),
+          loja: currentStore(),
+        },
+      }).catch((err) => console.error("Falha ao salvar sugestão no CRM:", err));
       const parts = [
         "Olá! Quero enviar uma sugestão ou reclamação para a GoldKo.",
         feedbackName.trim() ? `Nome: ${feedbackName.trim()}` : "Nome: não informado",
         feedbackPhone.trim() ? `Telefone: ${feedbackPhone.trim()}` : "Telefone: não informado",
         `Mensagem: ${feedbackMessage.trim()}`,
       ];
-      window.open(`${STORE_WHATSAPP}?text=${encodeURIComponent(parts.join("\n"))}`, "_blank", "noopener,noreferrer");
+      window.open(`${storeWhatsAppUrl()}?text=${encodeURIComponent(parts.join("\n"))}`, "_blank", "noopener,noreferrer");
       setFeedbackOpen(false);
       setFeedbackName("");
       setFeedbackPhone("");
@@ -663,7 +670,7 @@ export function ChatLead({
   const companyInterestLabels = lead.interests
     .map((value) => SEGMENT_QUESTIONS.empresa.q2Options.find((option) => option.value === value)?.label || value)
     .join(", ");
-  const companyWhatsAppHref = `${STORE_WHATSAPP}?text=${encodeURIComponent(
+  const companyWhatsAppHref = `${storeWhatsAppUrl()}?text=${encodeURIComponent(
     [
       `Olá! Sou ${lead.name || "um representante"}${lead.company ? `, da empresa ${lead.company}` : ""}.`,
       "Acabei de me cadastrar no site da GoldKo e tenho interesse no atendimento para empresas.",
@@ -735,7 +742,7 @@ export function ChatLead({
               </div>
               <div className="mt-4 flex justify-end gap-2">
                 <button type="button" onClick={() => setFeedbackOpen(false)} className="rounded-full border border-gray-200 px-5 py-2.5 text-sm font-bold text-gray-600">Cancelar</button>
-                <button type="submit" disabled={!feedbackMessage.trim()} className="rounded-full bg-[#00205C] px-5 py-2.5 text-sm font-bold text-white disabled:bg-[#00205C]/25">Enviar pelo WhatsApp</button>
+                <button type="submit" disabled={!feedbackMessage.trim()} className="rounded-full bg-[#00205C] px-5 py-2.5 text-sm font-bold text-white disabled:bg-[#00205C]/25">Enviar</button>
               </div>
             </form>
           </div>
@@ -801,7 +808,7 @@ export function ChatLead({
                       source: trackingSource,
                       segment: "empresa",
                       label: "Falar no WhatsApp",
-                      destination: STORE_WHATSAPP,
+                      destination: storeWhatsAppUrl(),
                     });
                   }}
                   className="inline-flex items-center gap-2 rounded-full bg-[#00205C] px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#003380]"
