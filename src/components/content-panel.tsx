@@ -163,7 +163,10 @@ interface PageItem {
   updatedAt?: string;
 }
 
-const STORE_PAGES = [{ id: "flamboyant", title: "GoldKo Flamboyant" }];
+const STORE_PAGES = [
+  { id: "flamboyant", title: "GoldKo Flamboyant" },
+  { id: "buriti", title: "GoldKo Buriti" },
+];
 
 function pagePublicUrl(pageId: string | null) {
   if (!pageId || pageId === "main") return "/";
