@@ -14,7 +14,9 @@ import {
   MapPin,
   CalendarDays,
   Leaf,
+  ChevronRight,
   Menu as MenuIcon,
+  MoreHorizontal,
   MessageCircle,
   Store,
   ShoppingBag,
@@ -200,7 +202,7 @@ export function HomePage({
   }> = [
     { key: "cliente", label: "Cliente GoldKo", segment: "cliente", text: "Loja, iFood, fidelidade e produtos", icon: Store, className: "bg-[#42C8E5] text-[#00205C]" },
     { key: "nutri", label: "Clube do Nutri", segment: "clube_nutri", text: "Parceria para nutricionistas", icon: Leaf, className: "bg-[#6FB23A] text-[#0F2A06]" },
-    { key: "empresa", label: "Para Empresas", segment: "empresa", text: "Presentes e kits corporativos", icon: Building2, className: "bg-[#00205C] text-white" },
+    { key: "empresa", label: "GoldKo para Empresas", segment: "empresa", text: "Presentes e kits corporativos", icon: Building2, className: "bg-[#00205C] text-white" },
     { key: "eventos", label: "Eventos e parcerias", segment: "eventos", text: "Conte sobre o seu evento", icon: CalendarDays, className: "bg-[#FF8515] text-[#2B1300]" },
   ];
 
@@ -475,31 +477,60 @@ export function HomePage({
             >
               Como podemos ajudar
             </a>
-            <button
-              onClick={() => openChat()}
-              className="rounded-full bg-[#42C8E5] px-5 py-2.5 font-semibold text-sm text-[#00205C] transition-transform hover:scale-105"
-            >
-              <EditableText
-                isEditable={isEditable}
-                path="navbar.ctaLabel"
-                label="Navbar: Texto do botão"
-                value={content.navbar.ctaLabel}
-                onEdit={onEditField}
-              >
-                {content.navbar.ctaLabel}
-              </EditableText>
-            </button>
-            <button
-              type="button"
-              data-nav-menu
-              aria-label={menuOpen ? "Fechar menu" : "Abrir menu"}
-              aria-expanded={menuOpen}
-              onClick={() => setMenuOpen((open) => !open)}
-              className="inline-flex h-11 items-center gap-2 rounded-full bg-[#00205C] pl-3.5 pr-[18px] text-sm font-bold text-white transition hover:bg-[#003380]"
-            >
-              {menuOpen ? <X className="size-5" /> : <MenuIcon className="size-5" />}
-              Menu
-            </button>
+            <div className="relative" data-nav-menu>
+              <div className="flex items-stretch overflow-hidden rounded-full bg-[#42C8E5]">
+                <button
+                  onClick={() => openChat()}
+                  className="py-3 pl-5 pr-4 text-sm font-bold text-[#00205C] transition-colors hover:bg-[#5BD2EA]"
+                >
+                  <EditableText
+                    isEditable={isEditable}
+                    path="navbar.ctaLabel"
+                    label="Navbar: Texto do botão"
+                    value={content.navbar.ctaLabel}
+                    onEdit={onEditField}
+                  >
+                    {content.navbar.ctaLabel}
+                  </EditableText>
+                </button>
+                <button
+                  type="button"
+                  aria-label={menuOpen ? "Fechar menu" : "Abrir menu"}
+                  aria-expanded={menuOpen}
+                  onClick={() => setMenuOpen((open) => !open)}
+                  className="flex w-12 items-center justify-center border-l border-[#00205C]/15 bg-[#1BA6C9] text-[#00205C] transition-colors hover:bg-[#1496B6]"
+                >
+                  {menuOpen ? <X className="size-5" /> : <MoreHorizontal className="size-5" />}
+                </button>
+              </div>
+              {menuOpen && (
+                <nav
+                  aria-label="Menu"
+                  className="absolute right-0 top-[calc(100%+12px)] z-50 flex w-[340px] flex-col rounded-[20px] border border-[#E8EDF4] bg-white p-2 shadow-[0_20px_48px_rgba(0,32,92,0.16)] animate-in fade-in slide-in-from-top-1 duration-150"
+                >
+                  {navThemes.map((theme) => {
+                    const Icon = theme.icon;
+                    return (
+                      <button
+                        key={theme.key}
+                        type="button"
+                        onClick={() => openNavTheme(theme)}
+                        className="group flex items-center gap-3.5 rounded-[14px] p-3 text-left text-[#00205C] transition-colors hover:bg-[#F2FAFD]"
+                      >
+                        <span className={`flex size-11 shrink-0 items-center justify-center rounded-[12px] ${theme.className}`}>
+                          <Icon className="size-[22px]" strokeWidth={2} />
+                        </span>
+                        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                          <span className="text-base font-bold">{theme.label}</span>
+                          <span className="text-[13px] font-normal text-[#4A5672]">{theme.text}</span>
+                        </span>
+                        <ChevronRight className="size-[18px] shrink-0 transition-transform group-hover:translate-x-0.5" />
+                      </button>
+                    );
+                  })}
+                </nav>
+              )}
+            </div>
           </nav>
           </NavbarPositionable>
           <NavbarPositionable
@@ -524,7 +555,7 @@ export function HomePage({
           </NavbarPositionable>
         </div>
         {menuOpen && (
-          <div className="fixed inset-x-0 bottom-0 top-16 z-50 bg-white md:absolute md:bottom-auto md:bg-transparent md:px-6">
+          <div className="fixed inset-x-0 bottom-0 top-16 z-50 bg-white md:hidden">
             <nav
               data-nav-menu
               aria-label="Menu"
