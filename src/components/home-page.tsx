@@ -223,7 +223,10 @@ export function HomePage({
     const esc = (event: KeyboardEvent) => event.key === "Escape" && setMenuOpen(false);
     document.addEventListener("mousedown", close);
     window.addEventListener("keydown", esc);
+    const previousOverflow = document.body.style.overflow;
+    if (window.matchMedia("(max-width: 767px)").matches) document.body.style.overflow = "hidden";
     return () => {
+      document.body.style.overflow = previousOverflow;
       document.removeEventListener("mousedown", close);
       window.removeEventListener("keydown", esc);
     };
@@ -419,7 +422,7 @@ export function HomePage({
 
   return (
     <main ref={containerRef} className="min-h-screen overflow-hidden bg-white text-foreground">
-      <header className="sticky top-0 z-50 border-0 bg-transparent text-foreground shadow-none backdrop-blur-none">
+      <header className={`sticky top-0 z-50 border-0 ${menuOpen ? "max-md:bg-white" : ""} bg-transparent text-foreground shadow-none backdrop-blur-none`}>
         <div className="site-navbar-inner mx-auto flex h-16 max-w-[1200px] items-center justify-between px-4 md:px-6">
           <NavbarPositionable
             id="logo"
@@ -521,11 +524,11 @@ export function HomePage({
           </NavbarPositionable>
         </div>
         {menuOpen && (
-          <div className="absolute inset-x-0 top-16 z-50 px-3 md:px-6">
+          <div className="fixed inset-x-0 bottom-0 top-16 z-50 bg-white md:absolute md:bottom-auto md:bg-transparent md:px-6">
             <nav
               data-nav-menu
               aria-label="Menu"
-              className="mx-auto max-w-[1200px] rounded-3xl border border-[#E8EDF4] bg-white p-4 shadow-[0_24px_60px_rgba(0,32,92,0.18)] animate-in fade-in slide-in-from-top-2 duration-200 md:p-6"
+              className="mx-auto flex h-full max-w-[1200px] flex-col overflow-y-auto bg-white px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 animate-in fade-in duration-200 md:block md:h-auto md:rounded-3xl md:border md:border-[#E8EDF4] md:p-6 md:shadow-[0_24px_60px_rgba(0,32,92,0.18)] md:slide-in-from-top-2"
             >
               <p className="mb-3 hidden text-xs font-bold uppercase tracking-[0.12em] text-[#4A5672] md:block">Escolha por onde começar</p>
               <div className="grid gap-2.5 md:grid-cols-4 md:gap-3">
@@ -547,7 +550,7 @@ export function HomePage({
                   );
                 })}
               </div>
-              <div className="mt-3 flex flex-col gap-2.5 md:hidden">
+              <div className="mt-auto flex flex-col gap-2.5 pt-6 md:hidden">
                 <button
                   type="button"
                   onClick={() => { setMenuOpen(false); openChat(); }}
