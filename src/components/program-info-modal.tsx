@@ -7,8 +7,6 @@ export type ProgramInfoKind = "nutri" | "empresa" | "fidelity";
 
 const WHATSAPP = LARA_WHATSAPP; // Lara (relacionamento GoldKo)
 const FIDELITY = "https://app.fidelo.com.br/getpass/eavFmj?utm_source=qr";
-const NUTRI_CATALOG = "/documentos/catalogo-nutricional-goldko.pdf";
-const NUTRI_CALORIES = "/documentos/tabela-de-calorias-goldko.pdf";
 
 type NutriOption = {
   icon: typeof Star;
@@ -46,20 +44,6 @@ const nutriOptions: NutriOption[] = [
     text: "Produtos organizados por família e apresentação.",
     action: "pdf",
     href: "/documentos/catalogo-produtos-goldko.pdf",
-  },
-  {
-    icon: FileText,
-    title: "Tabela nutricional",
-    text: "Informações nutricionais de cada produto.",
-    action: "pdf",
-    href: `${NUTRI_CATALOG}#page=3`,
-  },
-  {
-    icon: Sparkles,
-    title: "Tabela de calorias",
-    text: "Calorias por 100 g e por porção.",
-    action: "pdf",
-    href: NUTRI_CALORIES,
   },
 ];
 

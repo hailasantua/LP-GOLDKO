@@ -68,7 +68,7 @@ export function currentStore(): StoreId {
 const STORE_WHATSAPP_NUMBERS: Record<StoreId, string> = {
   flamboyant: "5562994311333",
   buriti: "5564993396331",
-  principal: "5562992358894",
+  principal: "5562994311333", // Flamboyant (antes: número do AA profissional)
 };
 
 /** Link wa.me da loja da página atual. */
