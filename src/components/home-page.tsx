@@ -561,8 +561,7 @@ export function HomePage({
               aria-label="Menu"
               className="mx-auto flex h-full max-w-[1200px] flex-col overflow-y-auto bg-white px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 animate-in fade-in duration-200 md:block md:h-auto md:rounded-3xl md:border md:border-[#E8EDF4] md:p-6 md:shadow-[0_24px_60px_rgba(0,32,92,0.18)] md:slide-in-from-top-2"
             >
-              <p className="mb-3 hidden text-xs font-bold uppercase tracking-[0.12em] text-[#4A5672] md:block">Escolha por onde começar</p>
-              <div className="grid gap-2.5 md:grid-cols-4 md:gap-3">
+              <div className="flex flex-col gap-1">
                 {navThemes.map((theme) => {
                   const Icon = theme.icon;
                   return (
@@ -570,13 +569,16 @@ export function HomePage({
                       key={theme.key}
                       type="button"
                       onClick={() => openNavTheme(theme)}
-                      className={`flex items-center gap-3.5 rounded-[18px] p-4 text-left transition hover:-translate-y-0.5 hover:shadow-lg md:min-h-[168px] md:flex-col md:items-start md:justify-between md:p-5 ${theme.className}`}
+                      className="flex items-center gap-4 rounded-2xl p-3 text-left text-[#00205C] transition-colors active:bg-[#F2FAFD]"
                     >
-                      <Icon className="size-[26px] shrink-0 md:size-[30px]" strokeWidth={2} />
-                      <span className="flex flex-col gap-0.5 md:gap-1">
-                        <span className="font-display text-[21px] font-bold uppercase leading-none md:text-2xl">{theme.label}</span>
-                        <span className="text-[13px] leading-snug md:text-sm">{theme.text}</span>
+                      <span className={`flex size-14 shrink-0 items-center justify-center rounded-[14px] ${theme.className}`}>
+                        <Icon className="size-6" strokeWidth={2} />
                       </span>
+                      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                        <span className="text-[17px] font-bold">{theme.label}</span>
+                        <span className="text-sm text-[#4A5672]">{theme.text}</span>
+                      </span>
+                      <ChevronRight className="size-5 shrink-0" />
                     </button>
                   );
                 })}
