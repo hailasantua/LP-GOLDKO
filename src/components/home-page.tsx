@@ -12,8 +12,11 @@ import {
   HeartHandshake,
   Instagram,
   MapPin,
+  CalendarDays,
+  Leaf,
+  Menu as MenuIcon,
   MessageCircle,
-  MoreHorizontal,
+  Store,
   ShoppingBag,
   Users,
   X,
@@ -187,11 +190,18 @@ export function HomePage({
   }
 
   /** Temas do menu "⋯" do topo: levam pros mesmos lugares dos cards de ajuda. */
-  const navThemes: Array<{ key: "cliente" | "nutri" | "empresa" | "eventos"; label: string; segment: string }> = [
-    { key: "cliente", label: "Cliente GoldKo", segment: "cliente" },
-    { key: "nutri", label: "Clube do Nutri", segment: "clube_nutri" },
-    { key: "empresa", label: "GoldKo para Empresas", segment: "empresa" },
-    { key: "eventos", label: "Eventos e parcerias", segment: "eventos" },
+  const navThemes: Array<{
+    key: "cliente" | "nutri" | "empresa" | "eventos";
+    label: string;
+    segment: string;
+    text: string;
+    icon: typeof Store;
+    className: string;
+  }> = [
+    { key: "cliente", label: "Cliente GoldKo", segment: "cliente", text: "Loja, iFood, fidelidade e produtos", icon: Store, className: "bg-[#42C8E5] text-[#00205C]" },
+    { key: "nutri", label: "Clube do Nutri", segment: "clube_nutri", text: "Parceria para nutricionistas", icon: Leaf, className: "bg-[#6FB23A] text-[#0F2A06]" },
+    { key: "empresa", label: "Para Empresas", segment: "empresa", text: "Presentes e kits corporativos", icon: Building2, className: "bg-[#00205C] text-white" },
+    { key: "eventos", label: "Eventos e parcerias", segment: "eventos", text: "Conte sobre o seu evento", icon: CalendarDays, className: "bg-[#FF8515] text-[#2B1300]" },
   ];
 
   function openNavTheme(theme: (typeof navThemes)[number]) {
@@ -476,31 +486,17 @@ export function HomePage({
                 {content.navbar.ctaLabel}
               </EditableText>
             </button>
-            <div className="relative" data-nav-menu>
-              <button
-                type="button"
-                aria-label="Mais opções"
-                aria-expanded={menuOpen}
-                onClick={() => setMenuOpen((open) => !open)}
-                className="flex size-10 items-center justify-center rounded-full text-[#00205C] transition hover:bg-[#E7F7FB]"
-              >
-                <MoreHorizontal className="size-6" />
-              </button>
-              {menuOpen && (
-                <div className="absolute right-0 top-12 z-50 w-60 overflow-hidden rounded-2xl border border-[#EDE6DA] bg-white p-1.5 shadow-xl">
-                  {navThemes.map((theme) => (
-                    <button
-                      key={theme.key}
-                      type="button"
-                      onClick={() => openNavTheme(theme)}
-                      className="block w-full rounded-xl px-4 py-3 text-left text-sm font-semibold text-[#00205C] transition hover:bg-[#E7F7FB]"
-                    >
-                      {theme.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <button
+              type="button"
+              data-nav-menu
+              aria-label={menuOpen ? "Fechar menu" : "Abrir menu"}
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((open) => !open)}
+              className="inline-flex h-11 items-center gap-2 rounded-full bg-[#00205C] pl-3.5 pr-[18px] text-sm font-bold text-white transition hover:bg-[#003380]"
+            >
+              {menuOpen ? <X className="size-5" /> : <MenuIcon className="size-5" />}
+              Menu
+            </button>
           </nav>
           </NavbarPositionable>
           <NavbarPositionable
@@ -514,38 +510,57 @@ export function HomePage({
             <button
               type="button"
               data-nav-menu
-              aria-label={menuOpen ? "Fechar menu" : "Mais opções"}
+              aria-label={menuOpen ? "Fechar menu" : "Abrir menu"}
               onClick={() => setMenuOpen((open) => !open)}
-              className="rounded-full p-2 text-[#00205C]"
+              aria-expanded={menuOpen}
+              className="inline-flex h-11 items-center gap-1.5 rounded-full bg-[#00205C] pl-3 pr-4 text-sm font-bold text-white"
             >
-              {menuOpen ? <X /> : <MoreHorizontal className="size-7" />}
+              {menuOpen ? <X className="size-[18px]" /> : <MenuIcon className="size-[18px]" />}
+              Menu
             </button>
           </NavbarPositionable>
         </div>
         {menuOpen && (
-          <nav data-nav-menu className="flex flex-col gap-4 border-t border-border bg-white px-5 py-5 text-sm font-semibold text-[#00205C] md:hidden">
-            {navThemes.map((theme) => (
-              <button key={theme.key} type="button" className="text-left" onClick={() => openNavTheme(theme)}>
-                {theme.label}
-              </button>
-            ))}
-            <div className="h-px bg-border" />
-            <a href="#como-ajudar" onClick={() => setMenuOpen(false)}>Como podemos ajudar</a>
-            <button
-              className="text-left"
-              onClick={() => { setMenuOpen(false); openChat(); }}
+          <div className="absolute inset-x-0 top-16 z-50 px-3 md:px-6">
+            <nav
+              data-nav-menu
+              aria-label="Menu"
+              className="mx-auto max-w-[1200px] rounded-3xl border border-[#E8EDF4] bg-white p-4 shadow-[0_24px_60px_rgba(0,32,92,0.18)] animate-in fade-in slide-in-from-top-2 duration-200 md:p-6"
             >
-              <EditableText
-                isEditable={isEditable}
-                path="navbar.ctaLabel"
-                label="Navbar: Texto do botão"
-                value={content.navbar.ctaLabel}
-                onEdit={onEditField}
-              >
-                {content.navbar.ctaLabel}
-              </EditableText>
-            </button>
-          </nav>
+              <p className="mb-3 hidden text-xs font-bold uppercase tracking-[0.12em] text-[#4A5672] md:block">Escolha por onde começar</p>
+              <div className="grid gap-2.5 md:grid-cols-4 md:gap-3">
+                {navThemes.map((theme) => {
+                  const Icon = theme.icon;
+                  return (
+                    <button
+                      key={theme.key}
+                      type="button"
+                      onClick={() => openNavTheme(theme)}
+                      className={`flex items-center gap-3.5 rounded-[18px] p-4 text-left transition hover:-translate-y-0.5 hover:shadow-lg md:min-h-[168px] md:flex-col md:items-start md:justify-between md:p-5 ${theme.className}`}
+                    >
+                      <Icon className="size-[26px] shrink-0 md:size-[30px]" strokeWidth={2} />
+                      <span className="flex flex-col gap-0.5 md:gap-1">
+                        <span className="font-display text-[21px] font-bold uppercase leading-none md:text-2xl">{theme.label}</span>
+                        <span className="text-[13px] leading-snug md:text-sm">{theme.text}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="mt-3 flex flex-col gap-2.5 md:hidden">
+                <button
+                  type="button"
+                  onClick={() => { setMenuOpen(false); openChat(); }}
+                  className="rounded-full bg-[#42C8E5] py-3.5 text-[15px] font-bold text-[#00205C]"
+                >
+                  {content.navbar.ctaLabel}
+                </button>
+                <a href="#como-ajudar" onClick={() => setMenuOpen(false)} className="py-2 text-center text-sm font-bold text-[#00205C]">
+                  Como podemos ajudar
+                </a>
+              </div>
+            </nav>
+          </div>
         )}
       </header>
 
