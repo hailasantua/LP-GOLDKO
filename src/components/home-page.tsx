@@ -12,8 +12,8 @@ import {
   HeartHandshake,
   Instagram,
   MapPin,
-  Menu,
   MessageCircle,
+  MoreHorizontal,
   ShoppingBag,
   Users,
   X,
@@ -185,6 +185,39 @@ export function HomePage({
     setChatSegment(segment);
     setChatOpen(true);
   }
+
+  /** Temas do menu "⋯" do topo: levam pros mesmos lugares dos cards de ajuda. */
+  const navThemes: Array<{ key: "cliente" | "nutri" | "empresa" | "eventos"; label: string; segment: string }> = [
+    { key: "cliente", label: "Cliente GoldKo", segment: "cliente" },
+    { key: "nutri", label: "Clube do Nutri", segment: "clube_nutri" },
+    { key: "empresa", label: "GoldKo para Empresas", segment: "empresa" },
+    { key: "eventos", label: "Eventos e parcerias", segment: "eventos" },
+  ];
+
+  function openNavTheme(theme: (typeof navThemes)[number]) {
+    setMenuOpen(false);
+    if (isEditable) return;
+    trackEvent("navigation_click", { section: "navbar", source: "general", segment: theme.segment, label: theme.label });
+    trackEvent("funnel_started", { section: "navbar", source: "general", segment: theme.segment });
+    setJourneySource("general");
+    if (theme.key === "cliente") return openChat("cliente", "general");
+    if (theme.key === "eventos") return setEventFormOpen(true);
+    setProgramInfo(theme.key);
+  }
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const close = (event: MouseEvent) => {
+      if (!(event.target as HTMLElement).closest("[data-nav-menu]")) setMenuOpen(false);
+    };
+    const esc = (event: KeyboardEvent) => event.key === "Escape" && setMenuOpen(false);
+    document.addEventListener("mousedown", close);
+    window.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      window.removeEventListener("keydown", esc);
+    };
+  }, [menuOpen]);
 
   const activePageId =
     propPageId ||
@@ -443,6 +476,31 @@ export function HomePage({
                 {content.navbar.ctaLabel}
               </EditableText>
             </button>
+            <div className="relative" data-nav-menu>
+              <button
+                type="button"
+                aria-label="Mais opções"
+                aria-expanded={menuOpen}
+                onClick={() => setMenuOpen((open) => !open)}
+                className="flex size-10 items-center justify-center rounded-full text-[#00205C] transition hover:bg-[#E7F7FB]"
+              >
+                <MoreHorizontal className="size-6" />
+              </button>
+              {menuOpen && (
+                <div className="absolute right-0 top-12 z-50 w-60 overflow-hidden rounded-2xl border border-[#EDE6DA] bg-white p-1.5 shadow-xl">
+                  {navThemes.map((theme) => (
+                    <button
+                      key={theme.key}
+                      type="button"
+                      onClick={() => openNavTheme(theme)}
+                      className="block w-full rounded-xl px-4 py-3 text-left text-sm font-semibold text-[#00205C] transition hover:bg-[#E7F7FB]"
+                    >
+                      {theme.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </nav>
           </NavbarPositionable>
           <NavbarPositionable
@@ -455,16 +513,23 @@ export function HomePage({
           >
             <button
               type="button"
-              aria-label={menuOpen ? "Fechar menu" : "Abrir menu"}
+              data-nav-menu
+              aria-label={menuOpen ? "Fechar menu" : "Mais opções"}
               onClick={() => setMenuOpen((open) => !open)}
-              className="rounded-full p-2"
+              className="rounded-full p-2 text-[#00205C]"
             >
-              {menuOpen ? <X /> : <Menu />}
+              {menuOpen ? <X /> : <MoreHorizontal className="size-7" />}
             </button>
           </NavbarPositionable>
         </div>
         {menuOpen && (
-          <nav className="flex flex-col gap-4 border-t border-border bg-white px-5 py-5 text-sm font-semibold md:hidden">
+          <nav data-nav-menu className="flex flex-col gap-4 border-t border-border bg-white px-5 py-5 text-sm font-semibold text-[#00205C] md:hidden">
+            {navThemes.map((theme) => (
+              <button key={theme.key} type="button" className="text-left" onClick={() => openNavTheme(theme)}>
+                {theme.label}
+              </button>
+            ))}
+            <div className="h-px bg-border" />
             <a href="#como-ajudar" onClick={() => setMenuOpen(false)}>Como podemos ajudar</a>
             <button
               className="text-left"
