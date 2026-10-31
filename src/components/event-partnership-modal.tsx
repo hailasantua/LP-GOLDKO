@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, ArrowRight, Building2, CalendarDays, Check, FileText, Loader2, Mail, Phone, Send, Sparkles, User, Users } from "lucide-react";
 import { GoldkoSheet, SheetHeader, CloseButton } from "@/components/goldko-sheet";
 import { submitLead } from "@/lib/leads.functions";
-import { trackEvent } from "@/lib/tracking";
+import { trackEvent, DUDA_WHATSAPP } from "@/lib/tracking";
 
 export function EventPartnershipModal({ open, onClose, trackingSource = "help_card" }: { open: boolean; onClose: () => void; trackingSource?: "hero" | "help_card" | "general" }) {
   const [company, setCompany] = useState("");
@@ -90,7 +90,18 @@ export function EventPartnershipModal({ open, onClose, trackingSource = "help_ca
           <h2 className="mt-5 font-display text-3xl font-bold uppercase text-[#00205C]">Solicitação recebida</h2>
           <p className="mt-2 max-w-md text-[15px] text-[#4A5672]">Os dados do evento foram enviados para nossa equipe. Entraremos em contato pelos dados informados.</p>
           {presentation && <p className="mt-3 text-xs text-[#4A5672]">A equipe vai pedir o arquivo “{presentation.name}” durante o atendimento.</p>}
-          <button type="button" onClick={onClose} className="mt-6 rounded-full bg-[#00205C] px-7 py-3 font-bold text-white transition hover:bg-[#003380]">Concluir</button>
+          <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+            <a
+              href={`${DUDA_WHATSAPP}?text=${encodeURIComponent(`Olá! Acabei de enviar a solicitação do evento ${eventName.trim() || ""} pelo site da GoldKo.`.replace(/\s+pelo/, " pelo"))}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackEvent("program_cta_click", { section: "eventos", source: trackingSource, segment: "eventos", label: "Falar no WhatsApp", destination: DUDA_WHATSAPP })}
+              className="rounded-full bg-[#00205C] px-7 py-3 font-bold text-white transition hover:bg-[#003380]"
+            >
+              Falar no WhatsApp agora
+            </a>
+            <button type="button" onClick={onClose} className="rounded-full border border-[#E6E1D8] bg-white px-7 py-3 font-bold text-[#00205C]/70 transition hover:border-[#00205C]/40">Concluir</button>
+          </div>
         </div>
       ) : (
         <>

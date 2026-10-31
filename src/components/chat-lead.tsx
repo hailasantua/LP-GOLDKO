@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Send, ChevronRight, Check, Loader2, FileText, ExternalLink, MessageCircle } from "lucide-react";
 import { CloseButton, GoldkoAvatar } from "@/components/goldko-sheet";
 import { createChatLeadServerFn, createFeedbackServerFn } from "@/lib/chat-leads.functions";
-import { trackEvent, currentStore, storeWhatsAppUrl } from "@/lib/tracking";
+import { trackEvent, currentStore, storeWhatsAppUrl, storeIfoodUrl, storeClubeNutriUrl, LARA_WHATSAPP } from "@/lib/tracking";
 
 export type Segment = "cliente" | "empresa" | "clube_nutri";
 
@@ -35,32 +35,39 @@ const SEGMENTS: { value: Segment; label: string }[] = [
 
 const FIDELITY_URL = "https://app.fidelo.com.br/getpass/eavFmj?utm_source=qr";
 const NUTRI_CATALOG_URL = "/documentos/catalogo-nutricional-goldko.pdf";
-const NUTRI_CALORIES_URL = "/documentos/tabela-de-calorias-goldko.pdf";
 
-const NUTRI_RESOURCES: Record<string, { label: string; href: string }> = {
-  catalogo_produtos: {
-    label: "Abrir catálogo de produtos",
-    href: NUTRI_CATALOG_URL,
-  },
-  tabela_nutricional: {
-    label: "Abrir tabela nutricional",
-    href: `${NUTRI_CATALOG_URL}#page=3`,
-  },
-  tabela_calorias: {
-    label: "Abrir tabela de calorias",
-    href: NUTRI_CALORIES_URL,
-  },
-};
+/** Destino de cada interesse do Clube do Nutri (botão mostrado ao final do cadastro). */
+function nutriResource(interest: string): { label: string; href: string } | undefined {
+  const lara = (text: string) => `${LARA_WHATSAPP}?text=${encodeURIComponent(text)}`;
+  const map: Record<string, { label: string; href: string }> = {
+    parceria_comercial: {
+      label: "Fale com o nosso relacionamento agora",
+      href: lara("Olá! Sou nutricionista e gostaria de conversar sobre uma parceria comercial com a GoldKo."),
+    },
+    informacoes_clube_nutri: {
+      label: "Ver como participar do Clube do Nutri",
+      href: storeClubeNutriUrl(),
+    },
+    // TODO: trocar pelo PDF de vendas dos kits (Haila + Felipe)
+    kits_exclusivos_nutricionistas: {
+      label: "Conhecer os kits exclusivos",
+      href: lara("Olá! Quero conhecer os kits e combos com valores exclusivos para nutricionistas."),
+    },
+    // TODO: trocar pelo catálogo de produtos com valores (Haila)
+    catalogo_produtos: {
+      label: "Abrir catálogo de produtos",
+      href: NUTRI_CATALOG_URL,
+    },
+  };
+  return map[interest];
+}
 
 const CLIENT_PATHS = [
   { label: "Falar com a loja", value: "store" },
-  { label: "Pedidos e entregas", value: "delivery" },
+  { label: "Pedidos e entregas no iFood", value: "delivery" },
   { label: "Cartão Fidelidade", value: "fidelity" },
   { label: "Nosso cardápio", value: "menu" },
   { label: "Nossos produtos", value: "products" },
-  { label: "Dúvidas frequentes", value: "faq" },
-  { label: "Pedidos para você", value: "personal_orders" },
-  { label: "Pedidos para presentear", value: "gift_orders" },
   { label: "Sugestões ou reclamações", value: "feedback" },
 ];
 
@@ -89,27 +96,24 @@ const SEGMENT_QUESTIONS: Record<
   empresa: {
     q1: "Quantos colaboradores tem a sua empresa?",
     q1Placeholder: "Ex: 50 colaboradores",
-    q1Chips: ["Até 10", "11 a 50", "51 a 200", "Mais de 200"],
+    q1Chips: ["Até 10", "11 a 50", "51 a 200", "Mais de 200", "Prefiro não informar"],
     q2: "O que sua empresa procura? (pode escolher mais de uma opção)",
     q2Options: [
-      { label: "Lanches Saudáveis p/ Equipe", value: "lanche_equipe" },
       { label: "Cestas & Kits Corporativos", value: "kits_corporativos" },
       { label: "Fornecimento Recorrente", value: "fornecimento" },
       { label: "Eventos & Datas Especiais", value: "eventos" },
     ],
   },
   clube_nutri: {
-    q1: "Quantos pacientes você acompanha atualmente?",
-    q1Placeholder: "Ex: 30 pacientes",
-    q1Chips: ["Menos de 20", "20 a 50", "51 a 100", "Mais de 100"],
+    q1: "Qual sua média de pacientes mensais?",
+    q1Placeholder: "Ex: 30 pacientes por mês",
+    q1Chips: ["Menos de 20", "20 a 50", "51 a 100", "Mais de 100", "Prefiro não informar"],
     q2: "O que mais te interessa no Clube do Nutri? (pode escolher mais de uma opção)",
     q2Options: [
       { label: "Parceria comercial", value: "parceria_comercial" },
       { label: "Como participar do Clube", value: "informacoes_clube_nutri" },
       { label: "Kits e combos exclusivos", value: "kits_exclusivos_nutricionistas" },
       { label: "Catálogo de produtos", value: "catalogo_produtos" },
-      { label: "Tabela nutricional", value: "tabela_nutricional" },
-      { label: "Tabela de calorias", value: "tabela_calorias" },
     ],
   },
 };
@@ -122,7 +126,7 @@ const SEGMENT_GREETINGS: Record<Segment, { title: string; subtitle: string; chat
   },
   empresa: {
     title: "Olá! Seja bem-vindo(a) à **GoldKo para Empresas**.",
-    subtitle: "Presentes corporativos, lanches saudáveis e parcerias sob medida para a sua equipe.",
+    subtitle: "Presentes corporativos e parcerias sob medida para a sua empresa.",
     chatTitle: "Para Empresas",
   },
   cliente: {
@@ -466,9 +470,8 @@ export function ChatLead({
         return;
       }
       if (value === "delivery") {
-        const message = encodeURIComponent("Olá! Preciso de ajuda com pedidos e entregas da GoldKo.");
-        window.open(`${storeWhatsAppUrl()}?text=${message}`, "_blank", "noopener,noreferrer");
-        pushBot("Abrimos o atendimento de pedidos e entregas no WhatsApp.");
+        window.open(storeIfoodUrl(), "_blank", "noopener,noreferrer");
+        pushBot("Abrimos a GoldKo no iFood para você.");
         return;
       }
       if (value === "fidelity") {
@@ -484,9 +487,6 @@ export function ChatLead({
       const unavailable: Record<string, string> = {
         menu: "Nosso cardápio",
         products: "Nosso catálogo de produtos",
-        faq: "A área de dúvidas frequentes",
-        personal_orders: "O catálogo de pedidos para você",
-        gift_orders: "O material de pedidos para presentear",
       };
       pushBot(`${unavailable[value] || "Este conteúdo"} estará disponível em breve. Enquanto isso, você pode falar diretamente com a nossa loja pelo WhatsApp.`);
     },
@@ -565,7 +565,7 @@ export function ChatLead({
     const finalLead = { ...lead, interests: selectedChips };
     const resourceLinks =
       finalLead.segment === "clube_nutri"
-        ? finalLead.interests.map((interest) => NUTRI_RESOURCES[interest]).filter(Boolean)
+        ? finalLead.interests.map((interest) => nutriResource(interest)).filter((r): r is { label: string; href: string } => Boolean(r))
         : [];
     setLead(finalLead);
     setSelectedChips([]);
@@ -670,7 +670,7 @@ export function ChatLead({
   const companyInterestLabels = lead.interests
     .map((value) => SEGMENT_QUESTIONS.empresa.q2Options.find((option) => option.value === value)?.label || value)
     .join(", ");
-  const companyWhatsAppHref = `${storeWhatsAppUrl()}?text=${encodeURIComponent(
+  const companyWhatsAppHref = `${LARA_WHATSAPP}?text=${encodeURIComponent(
     [
       `Olá! Sou ${lead.name || "um representante"}${lead.company ? `, da empresa ${lead.company}` : ""}.`,
       "Acabei de me cadastrar no site da GoldKo e tenho interesse no atendimento para empresas.",
@@ -808,7 +808,7 @@ export function ChatLead({
                       source: trackingSource,
                       segment: "empresa",
                       label: "Falar no WhatsApp",
-                      destination: storeWhatsAppUrl(),
+                      destination: LARA_WHATSAPP,
                     });
                   }}
                   className="inline-flex items-center gap-2 rounded-full bg-[#00205C] px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#003380]"

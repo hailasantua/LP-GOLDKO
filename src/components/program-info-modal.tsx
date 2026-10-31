@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef } from "react";
 import { ArrowUpRight, BadgeCheck, Building2, Download, FileText, Gift, HeartHandshake, MessageCircle, ShoppingBag, Sparkles, Star, Users } from "lucide-react";
 import { GoldkoSheet, SectionLabel, SheetHeader } from "@/components/goldko-sheet";
-import { trackEvent } from "@/lib/tracking";
+import { trackEvent, LARA_WHATSAPP, storeClubeNutriUrl } from "@/lib/tracking";
 
 export type ProgramInfoKind = "nutri" | "empresa" | "fidelity";
 
-const WHATSAPP = "https://wa.me/5562992358894";
+const WHATSAPP = LARA_WHATSAPP; // Lara (relacionamento GoldKo)
 const FIDELITY = "https://app.fidelo.com.br/getpass/eavFmj?utm_source=qr";
 const NUTRI_CATALOG = "/documentos/catalogo-nutricional-goldko.pdf";
 const NUTRI_CALORIES = "/documentos/tabela-de-calorias-goldko.pdf";
@@ -14,7 +14,7 @@ type NutriOption = {
   icon: typeof Star;
   title: string;
   text: string;
-  action: "whatsapp" | "pdf";
+  action: "whatsapp" | "pdf" | "site";
   href: string;
 };
 
@@ -22,16 +22,16 @@ const nutriOptions: NutriOption[] = [
   {
     icon: HeartHandshake,
     title: "Parceria comercial",
-    text: "Converse com a equipe sobre oportunidades de parceria.",
+    text: "Fale com o nosso relacionamento agora.",
     action: "whatsapp",
     href: `${WHATSAPP}?text=${encodeURIComponent("Olá! Sou nutricionista e gostaria de conversar sobre uma parceria comercial com a GoldKo.")}`,
   },
   {
     icon: BadgeCheck,
     title: "Como participar do Clube",
-    text: "Tire suas dúvidas e saiba como entrar no Clube do Nutri.",
-    action: "whatsapp",
-    href: `${WHATSAPP}?text=${encodeURIComponent("Olá! Quero mais informações sobre o Clube do Nutri GoldKo.")}`,
+    text: "Veja no site como entrar no Clube do Nutri.",
+    action: "site",
+    href: "", // definido pela loja da página (storeClubeNutriUrl)
   },
   {
     icon: Gift,
@@ -87,12 +87,12 @@ const content = {
   },
   fidelity: {
     eyebrow: "Cartão Fidelidade",
-    title: "Quanto mais GoldKo, melhor",
+    title: "Seja um cliente fiel e ganhe R$ 75 em compras",
     intro: "O programa Fidelo reúne suas vantagens em um cartão digital simples de cadastrar e fácil de acessar.",
     sections: [
-      { icon: Sparkles, title: "Como funciona", text: "Cadastre-se pelo link oficial e use seu cartão digital nas experiências participantes da GoldKo." },
-      { icon: Gift, title: "Benefícios", text: "Acompanhe as vantagens e campanhas disponíveis para clientes cadastrados no programa." },
-      { icon: BadgeCheck, title: "Como se cadastrar", text: "Acesse a página do Fidelo, informe seus dados e siga as orientações para concluir o cadastro." },
+      { icon: Sparkles, title: "Como funciona", text: "Todas as suas compras valem. A cada R$ 75 acumulados, você ganha 1 estrela. Com 10 estrelas, R$ 75 em compras na loja por nossa conta." },
+      { icon: Gift, title: "Benefícios", text: "Receba descontos especiais para clientes fiéis." },
+      { icon: BadgeCheck, title: "Como se cadastrar", text: "Clique no link abaixo e emita seu cartão em 1 minuto." },
     ],
     cta: "Emitir Cartão Fidelidade",
     href: FIDELITY,
@@ -138,8 +138,9 @@ export function ProgramInfoModal({ kind, onClose, trackingSource, trackingOption
 
   async function openNutriOption(option: NutriOption) {
     ctaClickedRef.current = true;
+    if (option.action === "site") option = { ...option, href: storeClubeNutriUrl() };
     const source = trackingSource || "help_card";
-    const eventName = option.action === "whatsapp" ? "program_cta_click" : "program_resource_click";
+    const eventName = option.action === "pdf" ? "program_resource_click" : "program_cta_click";
     await Promise.all([
       trackEvent(eventName, {
         section: "program_info",
@@ -159,7 +160,7 @@ export function ProgramInfoModal({ kind, onClose, trackingSource, trackingOption
   }
 
   const nutriGroups = [
-    { label: "Fale com a equipe", items: nutriOptions.filter((option) => option.action === "whatsapp") },
+    { label: "Fale com a equipe", items: nutriOptions.filter((option) => option.action !== "pdf") },
     { label: "Materiais para baixar", items: nutriOptions.filter((option) => option.action === "pdf") },
   ];
   const CtaIcon = kind === "fidelity" ? ArrowUpRight : MessageCircle;

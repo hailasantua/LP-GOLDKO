@@ -75,3 +75,27 @@ const STORE_WHATSAPP_NUMBERS: Record<StoreId, string> = {
 export function storeWhatsAppUrl(): string {
   return `https://wa.me/${STORE_WHATSAPP_NUMBERS[currentStore()]}`;
 }
+
+/** Contatos da equipe. */
+export const LARA_WHATSAPP = "https://wa.me/5564992922225"; // relacionamento: parcerias, empresas, Clube do Nutri
+export const DUDA_WHATSAPP = "https://wa.me/5564981072409"; // eventos e parcerias
+
+/** iFood de cada loja. TODO: link do iFood da Flamboyant (hoje usa o do Buriti). */
+const IFOOD_BURITI =
+  "https://www.ifood.com.br/delivery/rio-verde-go/goldko-shopping-buriti-rio-verde-residencial-jardim-campestre/2035feba-7e16-49b2-89e5-d3239bc4d0d5";
+const STORE_IFOOD_URLS: Record<StoreId, string> = {
+  flamboyant: IFOOD_BURITI,
+  buriti: IFOOD_BURITI,
+  principal: IFOOD_BURITI,
+};
+
+export function storeIfoodUrl(): string {
+  return STORE_IFOOD_URLS[currentStore()];
+}
+
+/** Site do Clube do Nutri da loja da página. */
+export function storeClubeNutriUrl(): string {
+  return currentStore() === "buriti"
+    ? "https://www.clubedonutri.online/buriti"
+    : "https://www.clubedonutri.online/flamboyant";
+}

@@ -209,7 +209,7 @@ export const defaultSiteContent: SiteContent = {
   customerMenu: {
     labels: {
       store: "Falar com a loja",
-      delivery: "Pedidos e entregas",
+      delivery: "Pedidos e entregas no iFood",
       fidelity: "Cartão Fidelidade",
       menu: "Nosso cardápio",
       products: "Nossos produtos",

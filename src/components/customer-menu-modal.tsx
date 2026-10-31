@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import {
   BookOpen,
-  CircleHelp,
+  ChevronRight,
   Clock,
-  Gift,
   MessageCircle,
   Package,
   Send,
-  ShoppingBag,
   Star,
   Store,
   Truck,
@@ -15,7 +13,7 @@ import {
 } from "lucide-react";
 import type { CustomerMenuLabels } from "@/lib/site-content";
 import { GoldkoSheet, SheetHeader } from "@/components/goldko-sheet";
-import { trackEvent, currentStore, storeWhatsAppUrl } from "@/lib/tracking";
+import { trackEvent, currentStore, storeWhatsAppUrl, storeIfoodUrl } from "@/lib/tracking";
 import { createFeedbackServerFn } from "@/lib/chat-leads.functions";
 
 type CustomerAction = {
@@ -28,12 +26,9 @@ const actions: CustomerAction[] = [
   { key: "store", icon: Store, action: "whatsapp" },
   { key: "delivery", icon: Truck, action: "delivery" },
   { key: "fidelity", icon: Star, action: "fidelity" },
+  { key: "feedback", icon: MessageCircle, action: "feedback" },
   { key: "menu", icon: BookOpen, action: "soon" },
   { key: "products", icon: Package, action: "soon" },
-  { key: "faq", icon: CircleHelp, action: "soon" },
-  { key: "personalOrders", icon: ShoppingBag, action: "soon" },
-  { key: "giftOrders", icon: Gift, action: "soon" },
-  { key: "feedback", icon: MessageCircle, action: "feedback" },
 ];
 
 type CustomerMenuModalProps = {
@@ -91,7 +86,8 @@ export function CustomerMenuModal({ open, onClose, trackingSource = "help_card",
     }
     if (item.action === "delivery") {
       trackEvent("funnel_completed", { source: trackingSource, segment: "cliente", option: item.key });
-      return openWhatsApp("Olá! Preciso de ajuda com pedidos e entregas da GoldKo.");
+      window.open(storeIfoodUrl(), "_blank", "noopener,noreferrer");
+      return;
     }
     if (item.action === "fidelity") {
       onClose();
@@ -152,15 +148,55 @@ export function CustomerMenuModal({ open, onClose, trackingSource = "help_card",
             {visibleActions.map((item) => {
               const Icon = item.icon;
               const label = labels[item.key];
+              const editClass = isEditable ? "cursor-text outline-dashed hover:outline hover:outline-2 hover:outline-[#ff8515]" : "";
+
+              // Cartão Fidelidade em destaque: largura total, fundo dourado e chamada do prêmio
+              if (item.action === "fidelity") {
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => editOrRun(item, label)}
+                    title={isEditable ? `Clique para editar: ${label}` : undefined}
+                    className={`group col-span-2 flex items-center gap-4 rounded-2xl border-2 border-[#F2B33D] bg-gradient-to-r from-[#FFF4D6] to-[#FFE3A3] p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 sm:p-5 ${editClass}`}
+                  >
+                    <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#00205C] text-[#F2B33D]">
+                      <Icon className="size-6 fill-current" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[17px] font-bold leading-snug text-[#00205C]">{label}</span>
+                      <span className="mt-0.5 block text-[13px] font-semibold text-[#8A5A00]">Seja um cliente fiel e ganhe R$ 75 em compras</span>
+                    </span>
+                    <ChevronRight className="size-5 shrink-0 text-[#00205C] transition group-hover:translate-x-0.5" />
+                  </button>
+                );
+              }
+
+              // iFood nas cores da marca: vermelho com fonte branca
+              if (item.action === "delivery") {
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => editOrRun(item, label)}
+                    title={isEditable ? `Clique para editar: ${label}` : undefined}
+                    className={`group flex min-h-[104px] flex-col items-start justify-between gap-3 rounded-2xl border border-[#EA1D2C] bg-[#EA1D2C] p-4 text-left text-white transition hover:-translate-y-0.5 hover:bg-[#C8101E] active:translate-y-0 ${editClass}`}
+                  >
+                    <span className="flex size-10 items-center justify-center rounded-full bg-white text-[#EA1D2C]">
+                      <Icon className="size-5" />
+                    </span>
+                    <span className="text-[15px] font-bold leading-snug text-white">{label}</span>
+                  </button>
+                );
+              }
+
               return (
                 <button
                   key={item.key}
                   type="button"
                   onClick={() => editOrRun(item, label)}
                   title={isEditable ? `Clique para editar: ${label}` : undefined}
-                  className={`group flex min-h-[104px] flex-col items-start justify-between gap-3 rounded-2xl border border-[#EDE6DA] bg-white p-4 text-left transition hover:-translate-y-0.5 hover:border-[#00205C] active:translate-y-0 ${
-                    isEditable ? "cursor-text outline-dashed hover:outline hover:outline-2 hover:outline-[#ff8515]" : ""
-                  }`}
+                  className={`group flex min-h-[104px] flex-col items-start justify-between gap-3 rounded-2xl border border-[#EDE6DA] bg-white p-4 text-left transition hover:-translate-y-0.5 hover:border-[#00205C] active:translate-y-0 ${editClass}`}
                 >
                   <span className="flex size-10 items-center justify-center rounded-full bg-[#E7F7FB] text-[#00205C] transition group-hover:bg-[#00205C] group-hover:text-white">
                     <Icon className="size-5" />
