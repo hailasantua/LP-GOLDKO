@@ -45,7 +45,7 @@ const nutriOptions: NutriOption[] = [
     title: "Catálogo de produtos",
     text: "Produtos organizados por família e apresentação.",
     action: "pdf",
-    href: NUTRI_CATALOG,
+    href: "/documentos/catalogo-produtos-goldko.pdf",
   },
   {
     icon: FileText,

@@ -19,7 +19,7 @@ import { createFeedbackServerFn } from "@/lib/chat-leads.functions";
 type CustomerAction = {
   key: keyof CustomerMenuLabels;
   icon: typeof Store;
-  action: "whatsapp" | "delivery" | "fidelity" | "feedback" | "soon";
+  action: "whatsapp" | "delivery" | "fidelity" | "feedback" | "catalog" | "soon";
 };
 
 const actions: CustomerAction[] = [
@@ -28,7 +28,7 @@ const actions: CustomerAction[] = [
   { key: "fidelity", icon: Star, action: "fidelity" },
   { key: "feedback", icon: MessageCircle, action: "feedback" },
   { key: "menu", icon: BookOpen, action: "soon" },
-  { key: "products", icon: Package, action: "soon" },
+  { key: "products", icon: Package, action: "catalog" },
 ];
 
 type CustomerMenuModalProps = {
@@ -96,6 +96,11 @@ export function CustomerMenuModal({ open, onClose, trackingSource = "help_card",
     }
     if (item.action === "feedback") {
       setFeedbackOpen(true);
+      return;
+    }
+    if (item.action === "catalog") {
+      trackEvent("funnel_completed", { source: trackingSource, segment: "cliente", option: item.key });
+      window.open("/documentos/catalogo-produtos-goldko.pdf", "_blank", "noopener,noreferrer");
       return;
     }
     setNotice(`${label} estará disponível em breve.`);

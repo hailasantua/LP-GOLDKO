@@ -34,7 +34,7 @@ const SEGMENTS: { value: Segment; label: string }[] = [
 ];
 
 const FIDELITY_URL = "https://app.fidelo.com.br/getpass/eavFmj?utm_source=qr";
-const NUTRI_CATALOG_URL = "/documentos/catalogo-nutricional-goldko.pdf";
+const PRODUCTS_CATALOG_URL = "/documentos/catalogo-produtos-goldko.pdf";
 
 /** Destino de cada interesse do Clube do Nutri (botão mostrado ao final do cadastro). */
 function nutriResource(interest: string): { label: string; href: string } | undefined {
@@ -53,10 +53,9 @@ function nutriResource(interest: string): { label: string; href: string } | unde
       label: "Conhecer os kits exclusivos",
       href: lara("Olá! Quero conhecer os kits e combos com valores exclusivos para nutricionistas."),
     },
-    // TODO: trocar pelo catálogo de produtos com valores (Haila)
     catalogo_produtos: {
       label: "Abrir catálogo de produtos",
-      href: NUTRI_CATALOG_URL,
+      href: PRODUCTS_CATALOG_URL,
     },
   };
   return map[interest];
@@ -483,10 +482,14 @@ export function ChatLead({
         setFeedbackOpen(true);
         return;
       }
+      if (value === "products") {
+        window.open(PRODUCTS_CATALOG_URL, "_blank", "noopener,noreferrer");
+        pushBot("Abrimos o nosso catálogo de produtos para você.");
+        return;
+      }
 
       const unavailable: Record<string, string> = {
         menu: "Nosso cardápio",
-        products: "Nosso catálogo de produtos",
       };
       pushBot(`${unavailable[value] || "Este conteúdo"} estará disponível em breve. Enquanto isso, você pode falar diretamente com a nossa loja pelo WhatsApp.`);
     },
