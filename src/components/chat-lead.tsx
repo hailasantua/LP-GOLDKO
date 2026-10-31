@@ -63,7 +63,7 @@ function nutriResource(interest: string): { label: string; href: string } | unde
 
 const CLIENT_PATHS = [
   { label: "Falar com a loja", value: "store" },
-  { label: "Pedidos e entregas no iFood", value: "delivery" },
+  { label: "iFood", value: "delivery" },
   { label: "Cartão Fidelidade", value: "fidelity" },
   { label: "Nosso cardápio", value: "menu" },
   { label: "Nossos produtos", value: "products" },

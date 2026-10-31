@@ -152,7 +152,7 @@ export function CustomerMenuModal({ open, onClose, trackingSource = "help_card",
           <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
             {visibleActions.map((item) => {
               const Icon = item.icon;
-              const label = labels[item.key];
+              const label = item.action === "delivery" ? "iFood" : labels[item.key];
               const editClass = isEditable ? "cursor-text outline-dashed hover:outline hover:outline-2 hover:outline-[#ff8515]" : "";
 
               // Cartão Fidelidade em destaque: largura total, fundo dourado e chamada do prêmio
@@ -190,7 +190,7 @@ export function CustomerMenuModal({ open, onClose, trackingSource = "help_card",
                     <span className="flex size-10 items-center justify-center rounded-full bg-white text-[#EA1D2C]">
                       <Icon className="size-5" />
                     </span>
-                    <span className="text-[15px] font-bold leading-snug text-white">{label}</span>
+                    <span className="text-[17px] font-bold leading-snug text-white">iFood</span>
                   </button>
                 );
               }
