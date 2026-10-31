@@ -581,20 +581,7 @@ export function HomePage({
               </div>
             )}
 
-            <EditableText
-              isEditable={isEditable}
-              path="hero.text"
-              label="Hero: Descrição"
-              value={content.hero.text}
-              onEdit={onEditField}
-              as="div"
-            >
-              <p className="hero-reveal mx-auto mt-6 max-w-[32rem] text-base leading-relaxed text-[#5d626a] md:text-lg">
-                {content.hero.text}
-              </p>
-            </EditableText>
-
-            <div className="hero-reveal mx-auto mt-7 w-full max-w-[25rem]">
+            <div className="hero-reveal mx-auto mt-6 w-full max-w-[25rem]">
               <button
                 onClick={() => { trackEvent("hero_cta_click", { section: "hero", source: "hero" }); trackEvent("funnel_started", { section: "hero", source: "hero" }); openChat(undefined, "hero"); }}
                 className="inline-flex w-full items-center justify-center gap-3 rounded-2xl border-b-4 border-[#159fbd] bg-[#42C8E5] px-7 py-4 font-bold uppercase text-[#00205C] shadow-sm transition hover:-translate-y-0.5 hover:bg-[#6ED4E9] active:translate-y-0 active:border-b-2"
