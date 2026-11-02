@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Send, ChevronRight, Check, Loader2, FileText, ExternalLink, MessageCircle } from "lucide-react";
-import { CloseButton, GoldkoAvatar } from "@/components/goldko-sheet";
+import { Send, ChevronRight, Check, Loader2, FileText, ExternalLink, MessageCircle, Heart, Building2, Leaf, X, type LucideIcon } from "lucide-react";
+import { GoldkoAvatar } from "@/components/goldko-sheet";
 import { createChatLeadServerFn, createFeedbackServerFn } from "@/lib/chat-leads.functions";
 import { trackEvent, currentStore, storeWhatsAppUrl, storeIfoodUrl, storeClubeNutriUrl, LARA_WHATSAPP } from "@/lib/tracking";
 
@@ -11,6 +11,8 @@ interface ChatMessage {
   from: "bot" | "user";
   text: string;
   chips?: { label: string; value: string }[];
+  /** Mostra as opções como cartões grandes (pergunta de perfil). */
+  cards?: boolean;
   multiSelect?: boolean;
   resourceLinks?: { label: string; href: string }[];
 }
@@ -30,8 +32,15 @@ interface LeadData {
 const SEGMENTS: { value: Segment; label: string }[] = [
   { value: "cliente", label: "Sou cliente" },
   { value: "empresa", label: "Empresa" },
-  { value: "clube_nutri", label: "Clube Nutri" },
+  { value: "clube_nutri", label: "Clube do Nutri" },
 ];
+
+/** Visual dos cartões de perfil: ícone, cores e descrição curta. */
+const SEGMENT_CARDS: Record<string, { description: string; Icon: LucideIcon; iconClass: string }> = {
+  cliente: { description: "Loja, iFood, cardápio, fidelidade", Icon: Heart, iconClass: "bg-[#E7F7FB] text-[#00205C]" },
+  empresa: { description: "Kits corporativos e eventos", Icon: Building2, iconClass: "bg-[#FDF0E4] text-[#B8611D]" },
+  clube_nutri: { description: "Para nutricionistas", Icon: Leaf, iconClass: "bg-[#E8F6EF] text-[#23795A]" },
+};
 
 const FIDELITY_URL = "https://app.fidelo.com.br/getpass/eavFmj?utm_source=qr";
 const PRODUCTS_CATALOG_URL = "/documentos/catalogo-produtos-goldko.pdf";
@@ -216,7 +225,41 @@ function MessageBubble({
           }`}
           dangerouslySetInnerHTML={{ __html: msg.text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>").replace(/\n/g, "<br/>") }}
         />
-        {msg.chips && (
+        {msg.chips && msg.cards && (
+          <div className="mt-3 flex flex-col gap-2.5">
+            {msg.chips.map((chip) => {
+              const card = SEGMENT_CARDS[chip.value];
+              const isSel = selectedChips.includes(chip.value);
+              const disabled = !chipsActive;
+              const Icon = card?.Icon ?? Heart;
+              return (
+                <button
+                  key={chip.value}
+                  type="button"
+                  onClick={() => !disabled && onChipClick(chip.value)}
+                  disabled={disabled}
+                  className={`flex w-full items-center gap-3 rounded-2xl border bg-white p-3.5 text-left transition-all duration-150 ${
+                    isSel
+                      ? "border-[#00205C] ring-1 ring-[#00205C]"
+                      : disabled
+                        ? "cursor-default border-[#EDE6DA] opacity-50"
+                        : "cursor-pointer border-[#EDE6DA] hover:border-[#00205C] active:scale-[0.99]"
+                  }`}
+                >
+                  <span className={`flex size-[42px] shrink-0 items-center justify-center rounded-xl ${card?.iconClass ?? ""}`}>
+                    <Icon className="size-[22px]" />
+                  </span>
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="text-[15px] font-bold text-[#00205C]">{chip.label}</span>
+                    {card && <span className="text-[13px] text-[#4A5672]">{card.description}</span>}
+                  </span>
+                  {isSel ? <Check className="size-[18px] shrink-0 text-[#00205C]" /> : <ChevronRight className="size-[18px] shrink-0 text-[#00205C]" />}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        {msg.chips && !msg.cards && (
           <div className="mt-2.5 flex flex-wrap gap-2">
             {msg.chips.map((chip) => {
               const isSel = selectedChips.includes(chip.value);
@@ -419,8 +462,8 @@ export function ChatLead({
       setStep("welcome");
       setTimeout(() => {
         pushBot(
-          "**Olá! Seja bem-vindo(a) à GoldKo.**\nÉ chocolate muito gostoso e sem culpa.\n\nPrimeiro, me conta: com qual perfil você se identifica?",
-          { chips: SEGMENTS.map((s) => ({ label: s.label, value: s.value })) },
+          "**Oi! Que bom te ver por aqui.**\nChocolate muito gostoso e sem culpa. Pra eu te ajudar do jeito certo, escolhe uma opção:",
+          { chips: SEGMENTS.map((s) => ({ label: s.label, value: s.value })), cards: true },
           "segment"
         );
       }, 350);
@@ -668,8 +711,12 @@ export function ChatLead({
 
   if (!open) return null;
 
-  const progressByStep: Partial<Record<Step, number>> = { company: 12, name: 28, phone: 48, q1: 70, q2: 90, done: 100 };
-  const progress = progressByStep[step] ?? 0;
+  // Passo atual de 4 (mostrado no topo do chat).
+  const stepNumberByStep: Record<Step, number> = {
+    welcome: 1, segment: 1, client_menu: 2, company: 2, name: 2, phone: 3, q1: 3, q2: 4, done: 4,
+  };
+  const currentStepNumber = stepNumberByStep[step];
+  const TOTAL_STEPS = 4;
   const companyInterestLabels = lead.interests
     .map((value) => SEGMENT_QUESTIONS.empresa.q2Options.find((option) => option.value === value)?.label || value)
     .join(", ");
@@ -750,26 +797,50 @@ export function ChatLead({
             </form>
           </div>
         )}
-        {/* CABEÇALHO COM A PERSONAGEM */}
-        <header className="relative z-10 flex shrink-0 items-center gap-3 bg-[#00205C] px-4 py-3.5 sm:px-5">
-          <GoldkoAvatar size="md" ring={false} />
-          <div className="min-w-0 flex-1">
-            <p className="text-[15px] font-bold leading-tight text-white">Assistente GoldKo</p>
-            <p className="mt-0.5 flex items-center gap-1.5 text-xs text-[#9FE6F5]">
-              <span className="size-[7px] rounded-full bg-[#5DCAA5]" />
-              {lead.segment ? SEGMENT_GREETINGS[lead.segment].chatTitle : "Online agora"}
-            </p>
+        {/* CABEÇALHO: personagem + passos */}
+        <header className="relative z-10 flex shrink-0 flex-col gap-3 border-b border-[#EDE6DA] bg-white px-4 pt-3.5 pb-3">
+          <div className="flex items-center gap-3">
+            <span className="flex size-[42px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#E7F7FB]">
+              <img src="/chat-avatar-goldko.png" alt="Assistente GoldKo" className="h-full w-full object-contain" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-base font-bold leading-tight text-[#00205C]">
+                {lead.segment ? SEGMENT_GREETINGS[lead.segment].chatTitle : "Assistente GoldKo"}
+              </p>
+              <p className="mt-0.5 flex items-center gap-1.5 text-xs text-[#4A5672]">
+                <span className="size-[7px] rounded-full bg-[#2E9E75]" />
+                Assistente online
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={closeAsAbandoned}
+              aria-label="Fechar"
+              className="flex size-11 shrink-0 items-center justify-center rounded-full border border-[#EDE6DA] bg-white text-[#00205C] transition hover:bg-[#E7F7FB]"
+            >
+              <X className="size-5" />
+            </button>
           </div>
-          <CloseButton onClick={closeAsAbandoned} tone="dark" />
+          <div className="flex items-center gap-2.5">
+            <div className="grid flex-1 grid-cols-4 gap-1" aria-hidden="true">
+              {Array.from({ length: TOTAL_STEPS }, (_, index) => (
+                <div
+                  key={index}
+                  className={`h-1 rounded-full transition-colors duration-300 ${
+                    index + 1 < currentStepNumber
+                      ? "bg-[#00205C]"
+                      : index + 1 === currentStepNumber
+                        ? "bg-[#42C8E5]"
+                        : "bg-[#E6EEF7]"
+                  }`}
+                />
+              ))}
+            </div>
+            <span className="text-xs font-bold text-[#4A5672]">
+              Passo {currentStepNumber} de {TOTAL_STEPS}
+            </span>
+          </div>
         </header>
-
-        {/* PROGRESSO DO CADASTRO */}
-        <div className="relative z-10 h-[3px] shrink-0 bg-[#E6EEF7]">
-          <div
-            className="h-full bg-[#42C8E5] transition-[width] duration-500 ease-out"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
 
         {/* MENSAGENS */}
         <div className="relative min-h-0 flex-1 bg-[#FFFBF5]">
@@ -784,10 +855,6 @@ export function ChatLead({
             }}
           />
         <div className="relative h-full overflow-y-auto overscroll-contain px-4 pb-5 pt-6 space-y-4 sm:px-5">
-          <div className="flex flex-col items-center pb-1 text-center animate-in fade-in zoom-in-95 duration-500">
-            <GoldkoAvatar size="xl" />
-            <p className="mt-3 text-xs font-bold uppercase tracking-[0.18em] text-[#D9772B]">GoldKo</p>
-          </div>
           {messages.map((msg) => (
             <MessageBubble
               key={msg.id}
