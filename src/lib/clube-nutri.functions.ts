@@ -28,12 +28,23 @@ export const getClubeNutriEvents = createServerFn({ method: "POST" })
       throw new Error("Acesso não autorizado.");
     }
 
-    const url = process.env["CLUBE_SUPABASE_URL"];
-    const key = process.env["CLUBE_SUPABASE_SECRET_KEY"];
+    const url = process.env["CLUBE_SUPABASE_URL"]?.trim().replace(/\/+$/, "");
+    const key = process.env["CLUBE_SUPABASE_SECRET_KEY"]?.trim();
     if (!url || !key) return { configured: false as const, events: [] as ClubeEventRow[] };
 
     const { createClient } = await import("@supabase/supabase-js");
-    const clube = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+    // Chaves novas (sb_secret_) não são JWT: vão só no header apikey, sem "Bearer".
+    const opaqueKey = key.startsWith("sb_secret_") || key.startsWith("sb_publishable_");
+    const clubeFetch: typeof fetch = (input, init) => {
+      const headers = new Headers(init?.headers);
+      if (opaqueKey && headers.get("Authorization") === `Bearer ${key}`) headers.delete("Authorization");
+      headers.set("apikey", key);
+      return fetch(input, { ...init, headers });
+    };
+    const clube = createClient(url, key, {
+      global: { fetch: clubeFetch },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
 
     // Período escolhido + o anterior, para a comparação.
     const sinceDate = new Date(Date.now() - (2 * data.days - 1) * 24 * 60 * 60 * 1000);
@@ -50,7 +61,7 @@ export const getClubeNutriEvents = createServerFn({ method: "POST" })
         .range(from, from + pageSize - 1);
       if (error) {
         console.error("Falha ao buscar eventos do Clube da Nutri:", error);
-        throw new Error("Não foi possível ler os dados do Clube da Nutri.");
+        throw new Error(`Não foi possível ler os dados do Clube da Nutri: ${error.message || error.code || "erro desconhecido"}`);
       }
       events.push(...((page || []) as ClubeEventRow[]));
       if (!page || page.length < pageSize) break;
