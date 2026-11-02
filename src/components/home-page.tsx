@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
@@ -276,10 +276,15 @@ export function HomePage({
   });
 
   const sourceContent = propContent ?? fetchedContent ?? defaultSiteContent;
-  const content =
-    !isEditable && publicDeviceMode && sourceContent.deviceVersions?.[publicDeviceMode]
-      ? mergeSiteContent(sourceContent.deviceVersions[publicDeviceMode])
-      : sourceContent;
+  // Memoizado: sem isso, `content` vira um objeto novo a cada render e o efeito
+  // de animação (GSAP) reinicia em qualquer clique, fazendo a tela piscar.
+  const content = useMemo(
+    () =>
+      !isEditable && publicDeviceMode && sourceContent.deviceVersions?.[publicDeviceMode]
+        ? mergeSiteContent(sourceContent.deviceVersions[publicDeviceMode])
+        : sourceContent,
+    [isEditable, publicDeviceMode, sourceContent],
+  );
   const isPublicContentLoading =
     !propContent &&
     (publicDeviceMode === null ||
