@@ -42,6 +42,7 @@ import { ProgramInfoModal, type ProgramInfoKind } from "./program-info-modal";
 import { SortableHeroBlock } from "./sortable-hero-block";
 import { NavbarPositionable } from "./navbar-positionable";
 import { HelpLine } from "./help-line";
+import { Stamp } from "./goldko-sheet";
 
 function isVideo(source: string) {
   return /\.(mp4|webm|mov)(\?|$)/i.test(source);
@@ -479,7 +480,7 @@ export function HomePage({
 
   return (
     <main ref={containerRef} className="min-h-screen overflow-hidden bg-white text-foreground">
-      <header className={`sticky top-0 z-50 border-0 ${menuOpen ? "max-md:bg-white" : ""} bg-transparent text-foreground shadow-none backdrop-blur-none`}>
+      <header className={`sticky top-0 z-50 border-0 ${menuOpen ? "max-md:bg-[#F6F5F3]" : ""} bg-transparent text-foreground shadow-none backdrop-blur-none`}>
         <div className="site-navbar-inner mx-auto flex h-16 max-w-[1200px] items-center justify-between px-4 md:px-6">
           <NavbarPositionable
             id="logo"
@@ -533,10 +534,10 @@ export function HomePage({
               Como podemos ajudar
             </a>
             <div className="relative" data-nav-menu>
-              <div className="flex items-stretch overflow-hidden rounded-full bg-[#42C8E5]">
+              <div className="flex items-stretch overflow-hidden rounded-xl bg-[#51b2dc]">
                 <button
                   onClick={() => openChat()}
-                  className="py-3 pl-5 pr-4 text-sm font-bold text-[#00205C] transition-colors hover:bg-[#5BD2EA]"
+                  className="py-3 pl-5 pr-4 text-sm font-bold text-[#0d2b40] transition-colors hover:bg-[#6cc0e4]"
                 >
                   <EditableText
                     isEditable={isEditable}
@@ -553,7 +554,7 @@ export function HomePage({
                   aria-label={menuOpen ? "Fechar menu" : "Abrir menu"}
                   aria-expanded={menuOpen}
                   onClick={() => setMenuOpen((open) => !open)}
-                  className="flex w-12 items-center justify-center border-l border-[#00205C]/15 bg-[#1BA6C9] text-[#00205C] transition-colors hover:bg-[#1496B6]"
+                  className="flex w-12 items-center justify-center border-l border-[#0d2b40]/20 bg-[#51b2dc] text-[#0d2b40] transition-colors hover:bg-[#6cc0e4]"
                 >
                   {menuOpen ? <X className="size-5" /> : <MoreHorizontal className="size-5" />}
                 </button>
@@ -561,7 +562,7 @@ export function HomePage({
               {menuOpen && (
                 <nav
                   aria-label="Menu"
-                  className="absolute right-0 top-[calc(100%+12px)] z-50 flex w-[340px] flex-col rounded-[20px] border border-[#E8EDF4] bg-white p-2 shadow-[0_20px_48px_rgba(0,32,92,0.16)] animate-in fade-in slide-in-from-top-1 duration-150"
+                  className="absolute right-0 top-[calc(100%+12px)] z-50 flex w-[360px] flex-col gap-2 rounded-[18px] border border-[#E2DED8] bg-[#F6F5F3] p-2.5 shadow-[0_20px_48px_rgba(13,43,64,0.18)] animate-in fade-in slide-in-from-top-1 duration-150"
                 >
                   {navThemes.map((theme) => {
                     const Icon = theme.icon;
@@ -570,14 +571,12 @@ export function HomePage({
                         key={theme.key}
                         type="button"
                         onClick={() => openNavTheme(theme)}
-                        className="group flex items-center gap-3.5 rounded-[14px] p-3 text-left text-[#00205C] transition-colors hover:bg-[#F2FAFD]"
+                        className="group flex items-center gap-3 rounded-[14px] border border-[#D9D6D0] bg-white p-2.5 text-left text-[#0d2b40] transition-colors hover:border-[#51b2dc]"
                       >
-                        <span className={`flex size-11 shrink-0 items-center justify-center rounded-[12px] ${theme.className}`}>
-                          <Icon className="size-[22px]" strokeWidth={2} />
-                        </span>
+                        <Stamp small><Icon className="size-[18px]" strokeWidth={2} /></Stamp>
                         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                          <span className="text-base font-bold">{theme.label}</span>
-                          <span className="text-[13px] font-normal text-[#4A5672]">{theme.text}</span>
+                          <span className="text-[15px] font-bold">{theme.label}</span>
+                          <span className="text-[13px] font-normal text-[#4f4f4a]">{theme.text}</span>
                         </span>
                         <ChevronRight className="size-[18px] shrink-0 transition-transform group-hover:translate-x-0.5" />
                       </button>
@@ -602,7 +601,7 @@ export function HomePage({
               aria-label={menuOpen ? "Fechar menu" : "Abrir menu"}
               onClick={() => setMenuOpen((open) => !open)}
               aria-expanded={menuOpen}
-              className="inline-flex h-11 items-center gap-1.5 rounded-full bg-[#00205C] pl-3 pr-4 text-sm font-bold text-white"
+              className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-[#51b2dc] pl-3 pr-4 text-sm font-bold text-[#0d2b40]"
             >
               {menuOpen ? <X className="size-[18px]" /> : <MenuIcon className="size-[18px]" />}
               Menu
@@ -610,13 +609,17 @@ export function HomePage({
           </NavbarPositionable>
         </div>
         {menuOpen && (
-          <div className="fixed inset-x-0 bottom-0 top-16 z-50 bg-white md:hidden">
+          <div className="fixed inset-x-0 bottom-0 top-16 z-50 bg-[#F6F5F3] md:hidden">
             <nav
               data-nav-menu
               aria-label="Menu"
-              className="mx-auto flex h-full max-w-[1200px] flex-col overflow-y-auto bg-white px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 animate-in fade-in duration-200 md:block md:h-auto md:rounded-3xl md:border md:border-[#E8EDF4] md:p-6 md:shadow-[0_24px_60px_rgba(0,32,92,0.18)] md:slide-in-from-top-2"
+              className="mx-auto flex h-full max-w-[1200px] flex-col overflow-y-auto bg-[#F6F5F3] px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 animate-in fade-in duration-200"
             >
-              <div className="flex flex-col gap-1">
+              <h2 className="gk-tag mb-3 self-start">
+                <span>Como podemos ajudar?</span>
+                <i aria-hidden="true" />
+              </h2>
+              <div className="flex flex-col gap-2.5">
                 {navThemes.map((theme) => {
                   const Icon = theme.icon;
                   return (
@@ -624,14 +627,12 @@ export function HomePage({
                       key={theme.key}
                       type="button"
                       onClick={() => openNavTheme(theme)}
-                      className="flex items-center gap-4 rounded-2xl p-3 text-left text-[#00205C] transition-colors active:bg-[#F2FAFD]"
+                      className="flex items-center gap-3.5 rounded-[14px] border border-[#D9D6D0] bg-white p-3 text-left text-[#0d2b40] transition-colors active:border-[#51b2dc]"
                     >
-                      <span className={`flex size-14 shrink-0 items-center justify-center rounded-[14px] ${theme.className}`}>
-                        <Icon className="size-6" strokeWidth={2} />
-                      </span>
+                      <Stamp><Icon className="size-5" strokeWidth={2} /></Stamp>
                       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                        <span className="text-[17px] font-bold">{theme.label}</span>
-                        <span className="text-sm text-[#4A5672]">{theme.text}</span>
+                        <span className="text-base font-bold">{theme.label}</span>
+                        <span className="text-[13px] text-[#4f4f4a]">{theme.text}</span>
                       </span>
                       <ChevronRight className="size-5 shrink-0" />
                     </button>
@@ -642,11 +643,11 @@ export function HomePage({
                 <button
                   type="button"
                   onClick={() => { setMenuOpen(false); openChat(); }}
-                  className="rounded-full bg-[#42C8E5] py-3.5 text-[15px] font-bold text-[#00205C]"
+                  className="rounded-xl bg-[#51b2dc] py-3.5 text-[15px] font-bold text-[#0d2b40]"
                 >
                   {content.navbar.ctaLabel}
                 </button>
-                <a href="#como-ajudar" onClick={() => setMenuOpen(false)} className="py-2 text-center text-sm font-bold text-[#00205C]">
+                <a href="#como-ajudar" onClick={() => setMenuOpen(false)} className="py-2 text-center text-sm font-semibold text-[#0d2b40] underline underline-offset-[3px]">
                   Como podemos ajudar
                 </a>
               </div>
