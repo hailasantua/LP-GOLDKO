@@ -140,7 +140,8 @@ export function CustomerMenuModal({ open, onClose, trackingSource = "help_card",
   }
 
   const activeActions = actions.filter((item) => item.action !== "soon");
-  const visibleActions = isEditable ? actions : activeActions;
+  // Cartão Fidelidade sempre no topo, em destaque.
+  const visibleActions = [...(isEditable ? actions : activeActions)].sort((a, b) => Number(b.action === "fidelity") - Number(a.action === "fidelity"));
 
   function editOrRun(item: CustomerAction, label: string) {
     if (isEditable) {
@@ -172,15 +173,16 @@ export function CustomerMenuModal({ open, onClose, trackingSource = "help_card",
                     type="button"
                     onClick={() => editOrRun(item, label)}
                     title={isEditable ? `Clique para editar: ${label}` : undefined}
-                    className={`${optionRowClass} border-[1.5px] border-[#51b2dc] py-3.5 ${editClass}`}
+                    className={`group relative flex w-full items-center gap-3.5 overflow-hidden rounded-[14px] border-2 border-[#51b2dc] bg-[#E7F4FA] px-3.5 py-4 text-left shadow-[0_6px_18px_rgba(81,178,220,0.28)] transition hover:-translate-y-0.5 hover:bg-[#DDF0F9] active:translate-y-0 ${editClass}`}
                   >
+                    <span className="absolute right-0 top-0 rounded-bl-[10px] bg-[#51b2dc] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#0d2b40]">Destaque</span>
                     <Stamp><Icon className="size-5 fill-current" /></Stamp>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-center justify-between gap-2">
-                        <span className="text-base font-bold leading-snug text-[#0d2b40]">{label}</span>
-                        <span className="shrink-0 rounded-[10px] bg-[#E7F4FA] px-2.5 py-1 text-[13px] font-bold text-[#0d2b40]">R$ 75</span>
+                    <span className="min-w-0 flex-1 pt-2">
+                      <span className="block text-[17px] font-bold leading-snug text-[#0d2b40]">{label}</span>
+                      <span className="mt-1 block text-[13px] leading-snug text-[#3f4a52]">Seja um cliente fiel e ganhe <b className="font-bold text-[#0d2b40]">R$ 75</b> em compras.</span>
+                      <span className="mt-2.5 inline-flex items-center gap-1.5 rounded-[10px] bg-[#51b2dc] px-3 py-1.5 text-[13px] font-bold text-[#0d2b40]">
+                        Emitir meu cartão <ChevronRight className="size-4 transition group-hover:translate-x-0.5" />
                       </span>
-                      <span className="mt-1 block text-[13px] leading-snug text-[#4f4f4a]">Seja um cliente fiel e ganhe R$ 75 em compras.</span>
                     </span>
                   </button>
                 );
