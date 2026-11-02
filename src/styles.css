@@ -209,3 +209,71 @@
     linear-gradient(to right, var(--mask-color) 0%, transparent 8%),
     linear-gradient(to left, var(--mask-color) 0%, transparent 8%);
 }
+
+/* ===== "Como posso te ajudar" em varal (mesmo desenho do cardápio online) ===== */
+.help-line { --ticket: #51b2dc; }
+.help-line-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.help-line-tag {
+  --notch: 9px; display: inline-flex; align-items: stretch; height: 64px; margin: 0; border-radius: 10px; background: var(--ticket); color: #f6ede4;
+  font: 600 30px/1 "Oswald", sans-serif; letter-spacing: .01em; text-transform: uppercase;
+  -webkit-mask: radial-gradient(circle var(--notch) at 0 50%, #0000 calc(var(--notch) - .5px), #000 var(--notch)) 0 0 / 100% 100% no-repeat, radial-gradient(circle var(--notch) at 100% 50%, #0000 calc(var(--notch) - .5px), #000 var(--notch)) 0 0 / 100% 100% no-repeat;
+  -webkit-mask-composite: source-in;
+  mask: radial-gradient(circle var(--notch) at 0 50%, #0000 calc(var(--notch) - .5px), #000 var(--notch)) 0 0 / 100% 100% no-repeat, radial-gradient(circle var(--notch) at 100% 50%, #0000 calc(var(--notch) - .5px), #000 var(--notch)) 0 0 / 100% 100% no-repeat;
+  mask-composite: intersect;
+}
+.help-line-tag > span { display: flex; align-items: center; padding: 0 24px 0 28px; }
+.help-line-tag > i { width: 34px; margin: 6px 0; border-left: 2px dashed rgba(13,43,64,.45); }
+.help-line-controls { display: flex; align-items: center; gap: 8px; }
+.help-line-controls button { width: 52px; height: 52px; display: grid; place-items: center; padding: 0; border: 1.5px solid var(--ticket); border-radius: 12px; background: #fff; color: #0d2b40; cursor: pointer; }
+.help-line-controls button:last-of-type { background: var(--ticket); }
+.help-line-stage { --cw: clamp(236px, 20vw, 290px); --sag: 50px; position: relative; height: calc((var(--cw) - 24px) * 4 / 3 + 170px); margin: 0 -24px; overflow: hidden; touch-action: pan-y; cursor: grab; user-select: none; -webkit-user-select: none; }
+.help-line-stage.is-dragging { cursor: grabbing; }
+.help-line-string { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.help-line-card { position: absolute; left: 0; top: 0; width: var(--cw); padding: 0; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; transform-origin: 50% 0; will-change: transform; }
+.help-line-card:focus-visible { outline: 3px solid #79563d; outline-offset: 3px; }
+.help-line-print { --stub: 60px; --notch: 15px; --corner: 12px; display: block; margin-top: 12px; filter: drop-shadow(0 12px 16px rgba(20,70,100,.24)); }
+.help-line-ticket {
+  display: block; padding: 12px 12px 0; background: var(--ticket);
+  -webkit-mask:
+    radial-gradient(circle var(--corner) at 0 0, #0000 calc(var(--corner) - .5px), #000 var(--corner)) 0 0 / 100% 100% no-repeat,
+    radial-gradient(circle var(--corner) at 100% 0, #0000 calc(var(--corner) - .5px), #000 var(--corner)) 0 0 / 100% 100% no-repeat,
+    radial-gradient(circle var(--corner) at 0 100%, #0000 calc(var(--corner) - .5px), #000 var(--corner)) 0 0 / 100% 100% no-repeat,
+    radial-gradient(circle var(--corner) at 100% 100%, #0000 calc(var(--corner) - .5px), #000 var(--corner)) 0 0 / 100% 100% no-repeat,
+    radial-gradient(circle var(--notch) at 0 calc(100% - var(--stub)), #0000 calc(var(--notch) - .5px), #000 var(--notch)) 0 0 / 100% 100% no-repeat,
+    radial-gradient(circle var(--notch) at 100% calc(100% - var(--stub)), #0000 calc(var(--notch) - .5px), #000 var(--notch)) 0 0 / 100% 100% no-repeat,
+    radial-gradient(circle 2.6px at 50% calc(100% - var(--stub)), #0000 2.2px, #000 2.8px) 0 0 / 11px 100% repeat-x;
+  -webkit-mask-composite: source-in;
+  mask:
+    radial-gradient(circle var(--corner) at 0 0, #0000 calc(var(--corner) - .5px), #000 var(--corner)) 0 0 / 100% 100% no-repeat,
+    radial-gradient(circle var(--corner) at 100% 0, #0000 calc(var(--corner) - .5px), #000 var(--corner)) 0 0 / 100% 100% no-repeat,
+    radial-gradient(circle var(--corner) at 0 100%, #0000 calc(var(--corner) - .5px), #000 var(--corner)) 0 0 / 100% 100% no-repeat,
+    radial-gradient(circle var(--corner) at 100% 100%, #0000 calc(var(--corner) - .5px), #000 var(--corner)) 0 0 / 100% 100% no-repeat,
+    radial-gradient(circle var(--notch) at 0 calc(100% - var(--stub)), #0000 calc(var(--notch) - .5px), #000 var(--notch)) 0 0 / 100% 100% no-repeat,
+    radial-gradient(circle var(--notch) at 100% calc(100% - var(--stub)), #0000 calc(var(--notch) - .5px), #000 var(--notch)) 0 0 / 100% 100% no-repeat,
+    radial-gradient(circle 2.6px at 50% calc(100% - var(--stub)), #0000 2.2px, #000 2.8px) 0 0 / 11px 100% repeat-x;
+  mask-composite: intersect;
+}
+.help-line-shot { position: relative; display: block; aspect-ratio: 3 / 4; overflow: hidden; border-radius: 6px; background: #d9d5cc; }
+.help-line-shot > div, .help-line-shot > img, .help-line-shot video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; pointer-events: none; }
+.help-line-chip { position: absolute; top: 12px; left: 12px; padding: 5px 10px; border-radius: 12px; background: rgba(255,255,255,.92); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #0d2b40; }
+.help-line-note { height: var(--stub); display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 6px; color: #0d2b40; }
+.help-line-note em { min-width: 0; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font: normal 600 20px/1.05 "Oswald", sans-serif; letter-spacing: .01em; text-transform: uppercase; color: #fff; }
+.help-line-note b { flex: none; display: inline-flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 600; white-space: nowrap; color: #0d2b40; }
+.help-line-peg { position: absolute; left: 50%; top: 0; width: 16px; height: 22px; margin-left: -8px; overflow: visible; filter: drop-shadow(0 3px 3px rgba(40,20,10,.3)); }
+.help-line-drops { display: flex; justify-content: center; align-items: flex-end; gap: 6px; margin-top: 4px; }
+.help-line-drops svg { width: 9px; height: 12px; fill: #d8cbc2; transition: width .3s, height .3s, fill .3s; }
+.help-line-drops svg.is-current { width: 13px; height: 17px; fill: #4a2a1c; }
+@media (max-width: 759px) {
+  .help-line-heading { margin-bottom: 14px; }
+  .help-line-tag { --notch: 7px; height: 46px; font-size: 21px; }
+  .help-line-tag > span { padding: 0 16px 0 20px; }
+  .help-line-tag > i { width: 24px; }
+  .help-line-controls { display: none; }
+  .help-line-stage { --cw: min(236px, 62vw); --sag: 30px; height: calc((var(--cw) - 20px) * 4 / 3 + 150px); margin: 0 -16px; cursor: auto; }
+  .help-line-print { --stub: 54px; --notch: 13px; --corner: 10px; filter: drop-shadow(0 10px 12px rgba(20,70,100,.24)); }
+  .help-line-ticket { padding: 10px 10px 0; }
+  .help-line-note { gap: 8px; }
+  .help-line-note em { font-size: 18px; }
+  .help-line-note b { font-size: 13px; }
+  .help-line-peg { width: 14px; height: 19px; margin-left: -7px; }
+}

@@ -41,6 +41,7 @@ import { EventPartnershipModal } from "./event-partnership-modal";
 import { ProgramInfoModal, type ProgramInfoKind } from "./program-info-modal";
 import { SortableHeroBlock } from "./sortable-hero-block";
 import { NavbarPositionable } from "./navbar-positionable";
+import { HelpLine } from "./help-line";
 
 function isVideo(source: string) {
   return /\.(mp4|webm|mov)(\?|$)/i.test(source);
@@ -139,6 +140,17 @@ function TrackedLink({
 const helpIcons = [HeartHandshake, Users, Building2, ShoppingBag];
 const discoverIcons = [Gift, Candy, Coffee, MapPin];
 
+/** Etiqueta curta mostrada na foto do card (varal do "Como posso te ajudar"). */
+function helpCardTag(card: { title?: string; href?: string }, index: number): string {
+  const t = (card.title || "").toLowerCase();
+  if (index === 3 || /evento|parceria/.test(t)) return "Eventos";
+  const segment = getSegmentFromCard(card, index);
+  if (segment === "clube_nutri") return "Nutricionistas";
+  if (segment === "empresa") return "Empresas";
+  if (segment === "cliente") return "Clientes";
+  return "";
+}
+
 function getSegmentFromCard(
   card: { title?: string; href?: string },
   index: number
@@ -178,6 +190,44 @@ export function HomePage({
   const [publicDeviceMode, setPublicDeviceMode] = useState<"desktop" | "mobile" | null>(
     isEditable ? "desktop" : null,
   );
+
+  /** Abre o destino de um card do "Como posso te ajudar" (mesma lógica do clique no card). */
+  function openHelpCard(index: number) {
+    const card = content.help.cards[index];
+    if (!card) return;
+    const cardSegment = getSegmentFromCard(card, index);
+    const isEventCard = index === 3 || /evento|parceria/i.test(card.title);
+    const programKind: ProgramInfoKind | null = index === 1 || /nutri/i.test(card.title)
+      ? "nutri"
+      : index === 2 || /empresa/i.test(card.title)
+        ? "empresa"
+        : null;
+    if (isEventCard) {
+      setJourneySource("help_card");
+      trackEvent("help_card_click", { section: "help", source: "help_card", segment: "eventos", label: card.title });
+      trackEvent("funnel_started", { section: "help", source: "help_card", segment: "eventos" });
+      setEventFormOpen(true);
+      return;
+    }
+    if (programKind) {
+      setJourneySource("help_card");
+      trackEvent("help_card_click", { section: "help", source: "help_card", segment: programKind === "nutri" ? "clube_nutri" : "empresa", label: card.title });
+      trackEvent("funnel_started", { section: "help", source: "help_card", segment: programKind === "nutri" ? "clube_nutri" : "empresa" });
+      setProgramInfo(programKind);
+      return;
+    }
+    if (cardSegment) {
+      trackEvent("help_card_click", { section: "help", source: "help_card", segment: cardSegment, label: card.title });
+      trackEvent("funnel_started", { section: "help", source: "help_card", segment: cardSegment });
+      openChat(cardSegment, "help_card");
+      return;
+    }
+    if (card.href) {
+      trackEvent("help_card_click", { section: "help", source: "help_card", label: card.title, destination: card.href });
+      if (card.href.startsWith("http")) window.open(card.href, "_blank", "noopener,noreferrer");
+      else window.location.href = card.href;
+    }
+  }
 
   function openChat(segment?: "cliente" | "empresa" | "clube_nutri", source: "hero" | "help_card" | "general" = "general") {
     setJourneySource(source);
@@ -784,6 +834,22 @@ export function HomePage({
         className="reveal-section w-full bg-white px-4 py-8 md:px-6 md:py-12"
       >
         <div className="mx-auto max-w-[1520px]">
+        {!isEditable ? (
+          <HelpLine
+            title={content.help.title}
+            items={content.help.cards.map((card, index) => ({
+              key: `${card.title}-${index}`,
+              title: card.title,
+              tag: helpCardTag(card, index),
+            }))}
+            renderMedia={(index) => {
+              const card = content.help.cards[index]!;
+              return <Media source={card.image} alt={card.title} className="h-full w-full object-cover object-top" />;
+            }}
+            onOpen={(index) => openHelpCard(index)}
+          />
+        ) : (
+        <>
           <SectionHeading
             title={content.help.title}
             subtitle={content.help.subtitle}
@@ -915,6 +981,8 @@ export function HomePage({
             );
           })}
         </div>
+        </>
+        )}
       </div>
     </SectionCanvas>
 
