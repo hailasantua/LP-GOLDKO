@@ -61,7 +61,18 @@ export const getClubeNutriEvents = createServerFn({ method: "POST" })
         .range(from, from + pageSize - 1);
       if (error) {
         console.error("Falha ao buscar eventos do Clube da Nutri:", error);
-        throw new Error(`Não foi possível ler os dados do Clube da Nutri: ${error.message || error.code || "erro desconhecido"}`);
+        // Diagnóstico sem expor a chave: tipo da chave e projeto do Supabase.
+        let keyKind = key.startsWith("sb_secret_") ? "sb_secret" : key.startsWith("sb_publishable_") ? "sb_publishable (pública)" : "desconhecida";
+        if (key.split(".").length === 3) {
+          try {
+            const payload = JSON.parse(Buffer.from(key.split(".")[1]!, "base64url").toString("utf8")) as { role?: string; ref?: string };
+            keyKind = `JWT role=${payload.role ?? "?"} projeto=${payload.ref ?? "?"}`;
+          } catch { keyKind = "JWT ilegível"; }
+        }
+        const project = url.replace(/^https?:\/\//, "").split(".")[0];
+        throw new Error(
+          `Não foi possível ler os dados do Clube da Nutri: ${error.message || error.code || "erro desconhecido"} · URL do projeto: ${project} · chave: ${keyKind}`,
+        );
       }
       events.push(...((page || []) as ClubeEventRow[]));
       if (!page || page.length < pageSize) break;
