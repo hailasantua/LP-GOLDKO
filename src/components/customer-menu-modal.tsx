@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import {
   BookOpen,
   ChevronRight,
-  Clock,
   MessageCircle,
   Package,
   Send,
@@ -12,7 +11,7 @@ import {
   X,
 } from "lucide-react";
 import type { CustomerMenuLabels } from "@/lib/site-content";
-import { GoldkoSheet, SheetHeader } from "@/components/goldko-sheet";
+import { GoldkoSheet, SheetHeader, Stamp, optionRowClass, primaryButtonClass } from "@/components/goldko-sheet";
 import { trackEvent, currentStore, storeWhatsAppUrl, storeIfoodUrl } from "@/lib/tracking";
 import { createFeedbackServerFn } from "@/lib/chat-leads.functions";
 
@@ -20,6 +19,14 @@ type CustomerAction = {
   key: keyof CustomerMenuLabels;
   icon: typeof Store;
   action: "whatsapp" | "delivery" | "fidelity" | "feedback" | "catalog" | "soon";
+};
+
+/** Linha de apoio embaixo de cada opção. */
+const descriptions: Partial<Record<keyof CustomerMenuLabels, string>> = {
+  store: "Pedidos, dúvidas e retirada",
+  delivery: "Entrega onde você estiver",
+  products: "Catálogo de produtos em PDF",
+  menu: "Em breve",
 };
 
 const actions: CustomerAction[] = [
@@ -133,7 +140,6 @@ export function CustomerMenuModal({ open, onClose, trackingSource = "help_card",
   }
 
   const activeActions = actions.filter((item) => item.action !== "soon");
-  const soonActions = actions.filter((item) => item.action === "soon");
   const visibleActions = isEditable ? actions : activeActions;
 
   function editOrRun(item: CustomerAction, label: string) {
@@ -148,14 +154,17 @@ export function CustomerMenuModal({ open, onClose, trackingSource = "help_card",
     <GoldkoSheet onBackdrop={closeAsAbandoned} maxWidth="max-w-[560px]">
         <SheetHeader eyebrow="Cliente GoldKo" title="Como posso te ajudar hoje?" onClose={closeAsAbandoned} />
 
-        <div className="relative overflow-y-auto px-5 pb-7 pt-4 sm:px-8 sm:pb-8">
-          <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+        <div className="relative overflow-y-auto px-4 pb-7 pt-3 sm:px-7 sm:pb-8">
+          <div className="flex flex-col gap-2.5">
             {visibleActions.map((item) => {
               const Icon = item.icon;
               const label = item.action === "delivery" ? "iFood" : labels[item.key];
               const editClass = isEditable ? "cursor-text outline-dashed hover:outline hover:outline-2 hover:outline-[#ff8515]" : "";
 
-              // Cartão Fidelidade em destaque: largura total, fundo dourado e chamada do prêmio
+              // Sugestões ou reclamações: link discreto no fim da lista
+              if (item.action === "feedback" && !isEditable) return null;
+
+              // Cartão Fidelidade em destaque: borda azul e etiqueta do prêmio
               if (item.action === "fidelity") {
                 return (
                   <button
@@ -163,34 +172,16 @@ export function CustomerMenuModal({ open, onClose, trackingSource = "help_card",
                     type="button"
                     onClick={() => editOrRun(item, label)}
                     title={isEditable ? `Clique para editar: ${label}` : undefined}
-                    className={`group col-span-2 flex items-center gap-4 rounded-2xl border-2 border-[#F2B33D] bg-gradient-to-r from-[#FFF4D6] to-[#FFE3A3] p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 sm:p-5 ${editClass}`}
+                    className={`${optionRowClass} border-[1.5px] border-[#51b2dc] py-3.5 ${editClass}`}
                   >
-                    <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#00205C] text-[#F2B33D]">
-                      <Icon className="size-6 fill-current" />
-                    </span>
+                    <Stamp><Icon className="size-5 fill-current" /></Stamp>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-[17px] font-bold leading-snug text-[#00205C]">{label}</span>
-                      <span className="mt-0.5 block text-[13px] font-semibold text-[#8A5A00]">Seja um cliente fiel e ganhe R$ 75 em compras</span>
+                      <span className="flex items-center justify-between gap-2">
+                        <span className="text-base font-bold leading-snug text-[#0d2b40]">{label}</span>
+                        <span className="shrink-0 rounded-[10px] bg-[#E7F4FA] px-2.5 py-1 text-[13px] font-bold text-[#0d2b40]">R$ 75</span>
+                      </span>
+                      <span className="mt-1 block text-[13px] leading-snug text-[#4f4f4a]">Seja um cliente fiel e ganhe R$ 75 em compras.</span>
                     </span>
-                    <ChevronRight className="size-5 shrink-0 text-[#00205C] transition group-hover:translate-x-0.5" />
-                  </button>
-                );
-              }
-
-              // iFood nas cores da marca: vermelho com fonte branca
-              if (item.action === "delivery") {
-                return (
-                  <button
-                    key={item.key}
-                    type="button"
-                    onClick={() => editOrRun(item, label)}
-                    title={isEditable ? `Clique para editar: ${label}` : undefined}
-                    className={`group flex min-h-[104px] flex-col items-start justify-between gap-3 rounded-2xl border border-[#EA1D2C] bg-[#EA1D2C] p-4 text-left text-white transition hover:-translate-y-0.5 hover:bg-[#C8101E] active:translate-y-0 ${editClass}`}
-                  >
-                    <span className="flex size-10 items-center justify-center rounded-full bg-white text-[#EA1D2C]">
-                      <Icon className="size-5" />
-                    </span>
-                    <span className="text-[17px] font-bold leading-snug text-white">iFood</span>
                   </button>
                 );
               }
@@ -201,32 +192,31 @@ export function CustomerMenuModal({ open, onClose, trackingSource = "help_card",
                   type="button"
                   onClick={() => editOrRun(item, label)}
                   title={isEditable ? `Clique para editar: ${label}` : undefined}
-                  className={`group flex min-h-[104px] flex-col items-start justify-between gap-3 rounded-2xl border border-[#EDE6DA] bg-white p-4 text-left transition hover:-translate-y-0.5 hover:border-[#00205C] active:translate-y-0 ${editClass}`}
+                  className={`${optionRowClass} ${editClass}`}
                 >
-                  <span className="flex size-10 items-center justify-center rounded-full bg-[#E7F7FB] text-[#00205C] transition group-hover:bg-[#00205C] group-hover:text-white">
-                    <Icon className="size-5" />
+                  <Stamp><Icon className="size-5" /></Stamp>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[15px] font-bold leading-snug text-[#0d2b40]">{label}</span>
+                    {descriptions[item.key] && <span className="mt-0.5 block text-[13px] text-[#4f4f4a]">{descriptions[item.key]}</span>}
                   </span>
-                  <span className="text-[15px] font-bold leading-snug text-[#00205C]">{label}</span>
-                  {isEditable && item.action === "soon" && (
-                    <span className="text-[11px] font-semibold uppercase tracking-wide text-[#8A7A63]">Em breve</span>
-                  )}
+                  <ChevronRight className="size-[18px] shrink-0 text-[#0d2b40] transition group-hover:translate-x-0.5" />
                 </button>
               );
             })}
           </div>
 
-          {!isEditable && soonActions.length > 0 && (
-            <div className="mt-3 flex items-start gap-3 rounded-2xl bg-[#F3EEE5]/90 px-4 py-3">
-              <Clock className="mt-0.5 size-4 shrink-0 text-[#8A7A63]" />
-              <p className="text-[13px] leading-relaxed text-[#6B5D48]">
-                <span className="font-bold">Em breve:</span>{" "}
-                {soonActions.map((item) => labels[item.key].toLowerCase()).join(", ")}.
-              </p>
-            </div>
+          {!isEditable && (
+            <button
+              type="button"
+              onClick={() => handleAction(actions.find((item) => item.action === "feedback")!, labels.feedback)}
+              className="mx-auto mt-3 block px-2 py-2 text-[13px] font-semibold text-[#0d2b40] underline underline-offset-[3px]"
+            >
+              {labels.feedback}
+            </button>
           )}
 
           {notice && (
-            <div className="mt-3 rounded-2xl border border-[#EDE6DA] bg-white px-4 py-3 text-center text-sm font-semibold text-[#00205C]">
+            <div className="mt-3 rounded-[14px] border border-[#D9D6D0] bg-white px-4 py-3 text-center text-sm font-semibold text-[#0d2b40]">
               {notice}
             </div>
           )}
@@ -234,22 +224,22 @@ export function CustomerMenuModal({ open, onClose, trackingSource = "help_card",
 
         {feedbackOpen && (
           <div className="absolute inset-0 z-30 flex items-end bg-[#001433]/70 p-3 backdrop-blur-sm sm:items-center sm:justify-center">
-            <form onSubmit={submitFeedback} className="w-full rounded-[1.5rem] bg-white p-5 shadow-2xl sm:max-w-md">
+            <form onSubmit={submitFeedback} className="w-full rounded-[1.25rem] bg-[#F6F5F3] p-5 shadow-2xl sm:max-w-md">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h3 className="font-display text-2xl font-bold uppercase text-[#00205C]">Sugestão ou reclamação</h3>
-                  <p className="mt-1 text-sm text-gray-500">Nome e telefone são opcionais.</p>
+                  <h3 className="gk-tag is-small"><span>Sugestão ou reclamação</span></h3>
+                  <p className="mt-2 text-sm text-[#4f4f4a]">Nome e telefone são opcionais.</p>
                 </div>
-                <button type="button" onClick={() => setFeedbackOpen(false)} className="rounded-full p-2 text-gray-500 hover:bg-gray-100">
+                <button type="button" aria-label="Fechar" onClick={() => setFeedbackOpen(false)} className="flex size-10 items-center justify-center rounded-xl bg-[#51b2dc] text-[#0d2b40]">
                   <X className="size-5" />
                 </button>
               </div>
               <div className="mt-4 space-y-3">
-                <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome (opcional)" className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base outline-none focus:border-[#42C8E5]" />
-                <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Seu telefone (opcional)" inputMode="tel" className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base outline-none focus:border-[#42C8E5]" />
-                <textarea required rows={5} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Escreva sua sugestão ou reclamação" className="w-full resize-none rounded-xl border border-gray-200 px-4 py-3 text-base outline-none focus:border-[#42C8E5]" />
+                <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome (opcional)" className="w-full rounded-xl border border-[#D9D6D0] bg-white px-4 py-3 text-base outline-none focus:border-[#51b2dc]" />
+                <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Seu telefone (opcional)" inputMode="tel" className="w-full rounded-xl border border-[#D9D6D0] bg-white px-4 py-3 text-base outline-none focus:border-[#51b2dc]" />
+                <textarea required rows={5} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Escreva sua sugestão ou reclamação" className="w-full resize-none rounded-xl border border-[#D9D6D0] bg-white px-4 py-3 text-base outline-none focus:border-[#51b2dc]" />
               </div>
-              <button type="submit" disabled={!message.trim()} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#00205C] px-5 py-3 font-bold text-white transition hover:bg-[#003380] disabled:bg-[#00205C]/25">
+              <button type="submit" disabled={!message.trim()} className={`mt-4 ${primaryButtonClass}`}>
                 <Send className="size-4" /> Enviar
               </button>
             </form>

@@ -279,3 +279,25 @@
   .help-line-note b { font-size: 13px; }
   .help-line-peg { width: 14px; height: 19px; margin-left: -7px; }
 }
+
+/* ===== Janelas no estilo do cardápio online: etiqueta-ticket, selo recortado ===== */
+:root { --gk-scallops: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='100.00' cy='50.00' r='3.9'/%3E%3Ccircle cx='98.75' cy='61.13' r='3.9'/%3E%3Ccircle cx='95.05' cy='71.69' r='3.9'/%3E%3Ccircle cx='89.09' cy='81.17' r='3.9'/%3E%3Ccircle cx='81.17' cy='89.09' r='3.9'/%3E%3Ccircle cx='71.69' cy='95.05' r='3.9'/%3E%3Ccircle cx='61.13' cy='98.75' r='3.9'/%3E%3Ccircle cx='50.00' cy='100.00' r='3.9'/%3E%3Ccircle cx='38.87' cy='98.75' r='3.9'/%3E%3Ccircle cx='28.31' cy='95.05' r='3.9'/%3E%3Ccircle cx='18.83' cy='89.09' r='3.9'/%3E%3Ccircle cx='10.91' cy='81.17' r='3.9'/%3E%3Ccircle cx='4.95' cy='71.69' r='3.9'/%3E%3Ccircle cx='1.25' cy='61.13' r='3.9'/%3E%3Ccircle cx='0.00' cy='50.00' r='3.9'/%3E%3Ccircle cx='1.25' cy='38.87' r='3.9'/%3E%3Ccircle cx='4.95' cy='28.31' r='3.9'/%3E%3Ccircle cx='10.91' cy='18.83' r='3.9'/%3E%3Ccircle cx='18.83' cy='10.91' r='3.9'/%3E%3Ccircle cx='28.31' cy='4.95' r='3.9'/%3E%3Ccircle cx='38.87' cy='1.25' r='3.9'/%3E%3Ccircle cx='50.00' cy='0.00' r='3.9'/%3E%3Ccircle cx='61.13' cy='1.25' r='3.9'/%3E%3Ccircle cx='71.69' cy='4.95' r='3.9'/%3E%3Ccircle cx='81.17' cy='10.91' r='3.9'/%3E%3Ccircle cx='89.09' cy='18.83' r='3.9'/%3E%3Ccircle cx='95.05' cy='28.31' r='3.9'/%3E%3Ccircle cx='98.75' cy='38.87' r='3.9'/%3E%3C/svg%3E"); }
+.gk-tag {
+  --notch: 7px; display: inline-flex; align-items: stretch; height: 46px; margin: 0; border-radius: 10px; background: #51b2dc; color: #f6ede4;
+  font: 600 22px/1 "Oswald", sans-serif; letter-spacing: .01em; text-transform: uppercase;
+  -webkit-mask: radial-gradient(circle var(--notch) at 0 50%, #0000 calc(var(--notch) - .5px), #000 var(--notch)) 0 0 / 100% 100% no-repeat, radial-gradient(circle var(--notch) at 100% 50%, #0000 calc(var(--notch) - .5px), #000 var(--notch)) 0 0 / 100% 100% no-repeat;
+  -webkit-mask-composite: source-in;
+  mask: radial-gradient(circle var(--notch) at 0 50%, #0000 calc(var(--notch) - .5px), #000 var(--notch)) 0 0 / 100% 100% no-repeat, radial-gradient(circle var(--notch) at 100% 50%, #0000 calc(var(--notch) - .5px), #000 var(--notch)) 0 0 / 100% 100% no-repeat;
+  mask-composite: intersect;
+}
+.gk-tag > span { display: flex; align-items: center; padding: 0 14px 0 18px; }
+.gk-tag > i { width: 22px; margin: 6px 0; border-left: 2px dashed rgba(13,43,64,.45); }
+.gk-tag.is-small { --notch: 6px; height: 32px; font-size: 16px; border-radius: 8px; }
+.gk-tag.is-small > span { padding: 0 14px; }
+.gk-stamp {
+  display: grid; place-items: center; flex: none; width: 56px; height: 56px; background: #51b2dc;
+  -webkit-mask: radial-gradient(circle closest-side, #000 99%, #0000) 0 0 / 100% 100% no-repeat, var(--gk-scallops) 0 0 / 100% 100% no-repeat; -webkit-mask-composite: source-out;
+  mask: radial-gradient(circle closest-side, #000 99%, #0000) 0 0 / 100% 100% no-repeat, var(--gk-scallops) 0 0 / 100% 100% no-repeat; mask-composite: subtract;
+}
+.gk-stamp > span { display: grid; place-items: center; width: 78%; height: 78%; border-radius: 50%; background: #fff; color: #0d2b40; }
+.gk-stamp.is-small { width: 46px; height: 46px; }

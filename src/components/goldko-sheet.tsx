@@ -2,8 +2,9 @@ import type { ReactNode } from "react";
 import { X } from "lucide-react";
 
 /**
- * Casca visual compartilhada do chat e dos modais da GoldKo:
- * fundo creme com ilustração suave, personagem no topo, título curto e botão de fechar visível.
+ * Casca visual compartilhada dos modais da GoldKo, no estilo do cardápio online:
+ * fundo bege-claro, título em etiqueta-ticket azul, botão de fechar quadrado azul
+ * e ícones dentro de um selo recortado.
  */
 
 export const GK = {
@@ -55,9 +56,9 @@ export function GoldkoSheet({
       onClick={(event) => event.target === event.currentTarget && onBackdrop()}
     >
       <section
-        className={`relative flex max-h-[100dvh] w-full ${maxWidth} flex-col overflow-hidden rounded-t-[1.75rem] bg-[#FFFBF5] shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300 sm:max-h-[92dvh] sm:rounded-[1.75rem]`}
+        className={`relative flex max-h-[100dvh] w-full ${maxWidth} flex-col overflow-hidden rounded-t-[1.5rem] bg-[#F6F5F3] text-[#0d2b40] shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300 sm:max-h-[92dvh] sm:rounded-[1.5rem]`}
       >
-        <SoftPattern />
+        <span aria-hidden="true" className="mx-auto mt-2.5 block h-[5px] w-10 shrink-0 rounded-full bg-[#D3CEC6] sm:hidden" />
         {children}
       </section>
     </div>
@@ -76,14 +77,18 @@ export function SheetHeader({
   onClose: () => void;
 }) {
   return (
-    <header className="relative flex items-start gap-4 px-5 pb-2 pt-6 sm:px-8 sm:pt-8">
-      <GoldkoAvatar size="lg" />
-      <div className="min-w-0 flex-1 pr-2">
-        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#D9772B]">{eyebrow}</p>
-        <h2 className="mt-1 font-display text-2xl font-bold uppercase leading-[1.05] text-[#00205C] sm:text-3xl">{title}</h2>
-        {intro && <p className="mt-1.5 text-sm leading-relaxed text-[#4A5672] sm:text-[15px]">{intro}</p>}
+    <header className="relative px-4 pb-1 pt-3 sm:px-7 sm:pt-7">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="gk-tag min-w-0">
+          <span className="truncate">
+            {eyebrow}
+            <span className="sr-only"> — {title}</span>
+          </span>
+          <i aria-hidden="true" />
+        </h2>
+        <CloseButton onClick={onClose} />
       </div>
-      <CloseButton onClick={onClose} />
+      {intro && <p className="mt-3 text-sm leading-relaxed text-[#4f4f4a] sm:text-[15px]">{intro}</p>}
     </header>
   );
 }
@@ -94,10 +99,10 @@ export function CloseButton({ onClick, tone = "light" }: { onClick: () => void; 
       type="button"
       onClick={onClick}
       aria-label="Fechar"
-      className={`flex size-10 shrink-0 items-center justify-center rounded-full transition ${
+      className={`flex shrink-0 items-center justify-center transition ${
         tone === "dark"
-          ? "text-white hover:bg-white/15"
-          : "bg-white text-[#00205C] ring-1 ring-[#00205C]/10 hover:bg-[#E7F7FB]"
+          ? "size-10 rounded-full text-white hover:bg-white/15"
+          : "size-[46px] rounded-xl bg-[#51b2dc] text-[#0d2b40] hover:bg-[#6cc0e4]"
       }`}
     >
       <X className="size-5" />
@@ -105,6 +110,28 @@ export function CloseButton({ onClick, tone = "light" }: { onClick: () => void; 
   );
 }
 
-export function SectionLabel({ children }: { children: ReactNode }) {
-  return <h3 className="mb-2.5 text-xs font-bold uppercase tracking-[0.14em] text-[#00205C]/60">{children}</h3>;
+export function SectionLabel({ children, aside }: { children: ReactNode; aside?: ReactNode }) {
+  return (
+    <div className="mb-2.5 flex items-center justify-between gap-3">
+      <h3 className="gk-tag is-small"><span>{children}</span></h3>
+      {aside && <span className="text-[13px] text-[#4f4f4a]">{aside}</span>}
+    </div>
+  );
 }
+
+/** Ícone dentro do selo azul recortado (mesmo das fotos do cardápio). */
+export function Stamp({ children, small = false }: { children: ReactNode; small?: boolean }) {
+  return (
+    <span className={small ? "gk-stamp is-small" : "gk-stamp"} aria-hidden="true">
+      <span>{children}</span>
+    </span>
+  );
+}
+
+/** Linha clicável dos modais: selo + título + texto + seta (cards brancos do cardápio). */
+export const optionRowClass =
+  "group flex w-full items-center gap-3.5 rounded-[14px] border border-[#D9D6D0] bg-white px-3.5 py-3 text-left transition hover:border-[#51b2dc] active:scale-[0.99]";
+
+/** Botão principal azul do cardápio. */
+export const primaryButtonClass =
+  "inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#51b2dc] px-6 py-3.5 text-[15px] font-bold text-[#0d2b40] transition hover:bg-[#6cc0e4] disabled:opacity-50";

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, ArrowRight, Building2, CalendarDays, Check, FileText, Loader2, Mail, Phone, Send, Sparkles, User, Users } from "lucide-react";
-import { GoldkoSheet, SheetHeader, CloseButton } from "@/components/goldko-sheet";
+import { GoldkoSheet, SheetHeader, CloseButton, primaryButtonClass } from "@/components/goldko-sheet";
 import { submitLead } from "@/lib/leads.functions";
 import { trackEvent, DUDA_WHATSAPP } from "@/lib/tracking";
 
@@ -77,30 +77,30 @@ export function EventPartnershipModal({ open, onClose, trackingSource = "help_ca
     });
   }
 
-  const inputClass = "w-full rounded-2xl border border-[#E6E1D8] bg-white px-4 py-3 pl-11 text-base text-[#172033] outline-none transition placeholder:text-[#00205C]/35 focus:border-[#42C8E5] focus:ring-2 focus:ring-[#42C8E5]/20";
-  const labelClass = "text-[13px] font-bold text-[#00205C]";
-  const iconClass = "pointer-events-none absolute left-4 top-1/2 size-[18px] -translate-y-1/2 text-[#00205C]/45";
+  const inputClass = "w-full rounded-xl border border-[#D9D6D0] bg-white px-4 py-3 pl-11 text-base text-[#0d2b40] outline-none transition placeholder:text-[#8A8A84] focus:border-[#51b2dc] focus:ring-2 focus:ring-[#51b2dc]/25";
+  const labelClass = "text-sm font-semibold text-[#0d2b40]";
+  const iconClass = "pointer-events-none absolute left-4 top-1/2 size-[18px] -translate-y-1/2 text-[#0d2b40]/45";
 
   return (
     <GoldkoSheet onBackdrop={closeAsAbandoned} maxWidth="max-w-xl">
       {mutation.isSuccess ? (
         <div className="relative flex min-h-96 flex-col items-center justify-center px-6 py-10 text-center">
           <div className="absolute right-4 top-4"><CloseButton onClick={onClose} /></div>
-          <span className="flex size-16 items-center justify-center rounded-full bg-[#E1F5EE] text-[#0F6E56]"><Check className="size-8" /></span>
-          <h2 className="mt-5 font-display text-3xl font-bold uppercase text-[#00205C]">Solicitação recebida</h2>
-          <p className="mt-2 max-w-md text-[15px] text-[#4A5672]">Os dados do evento foram enviados para nossa equipe. Entraremos em contato pelos dados informados.</p>
-          {presentation && <p className="mt-3 text-xs text-[#4A5672]">A equipe vai pedir o arquivo “{presentation.name}” durante o atendimento.</p>}
+          <span className="gk-stamp" style={{ width: 72, height: 72 }} aria-hidden="true"><span><Check className="size-8" /></span></span>
+          <h2 className="gk-tag mt-5"><span>Solicitação recebida</span><i aria-hidden="true" /></h2>
+          <p className="mt-3 max-w-md text-[15px] text-[#4f4f4a]">Os dados do evento foram enviados para nossa equipe. Entraremos em contato pelos dados informados.</p>
+          {presentation && <p className="mt-3 text-xs text-[#4f4f4a]">A equipe vai pedir o arquivo “{presentation.name}” durante o atendimento.</p>}
           <div className="mt-6 flex flex-col gap-2 sm:flex-row">
             <a
               href={`${DUDA_WHATSAPP}?text=${encodeURIComponent(`Olá! Acabei de enviar a solicitação do evento ${eventName.trim() || ""} pelo site da GoldKo.`.replace(/\s+pelo/, " pelo"))}`}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => trackEvent("program_cta_click", { section: "eventos", source: trackingSource, segment: "eventos", label: "Falar no WhatsApp", destination: DUDA_WHATSAPP })}
-              className="rounded-full bg-[#00205C] px-7 py-3 font-bold text-white transition hover:bg-[#003380]"
+              className="rounded-xl bg-[#51b2dc] px-7 py-3 font-bold text-[#0d2b40] transition hover:bg-[#6cc0e4]"
             >
               Falar no WhatsApp agora
             </a>
-            <button type="button" onClick={onClose} className="rounded-full border border-[#E6E1D8] bg-white px-7 py-3 font-bold text-[#00205C]/70 transition hover:border-[#00205C]/40">Concluir</button>
+            <button type="button" onClick={onClose} className="rounded-xl border-[1.5px] border-[#51b2dc] bg-white px-7 py-3 font-bold text-[#0d2b40] transition hover:bg-[#E7F4FA]">Concluir</button>
           </div>
         </div>
       ) : (
@@ -111,22 +111,30 @@ export function EventPartnershipModal({ open, onClose, trackingSource = "help_ca
             intro={formStep === 1 ? "Primeiro, os detalhes do evento." : "Agora, como falamos com você?"}
             onClose={closeAsAbandoned}
           />
-          <div className="relative px-5 sm:px-8">
-            <div className="flex items-center gap-2 text-xs font-semibold text-[#4A5672]">
-              <span className={formStep === 1 ? "text-[#00205C]" : ""}>1. Evento</span>
-              <span className="h-px flex-1 bg-[#E6E1D8]"><span className="block h-px bg-[#42C8E5] transition-all duration-500" style={{ width: formStep === 1 ? "50%" : "100%" }} /></span>
-              <span className={formStep === 2 ? "text-[#00205C]" : ""}>2. Contato</span>
+          <div className="relative px-4 pt-2 sm:px-7">
+            <div className="flex gap-2 border-b border-[#E2DED8] pb-3.5">
+              {(["1. Evento", "2. Contato"] as const).map((label, index) => (
+                <span
+                  key={label}
+                  aria-current={formStep === index + 1 ? "step" : undefined}
+                  className={`inline-flex h-10 items-center rounded-[10px] px-4 text-sm font-semibold transition ${
+                    formStep === index + 1 ? "bg-[#51b2dc] text-[#0d2b40]" : "border-[1.5px] border-[#CFE6F2] bg-white text-[#4f4f4a]"
+                  }`}
+                >
+                  {label}
+                </span>
+              ))}
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} onChange={markStarted} className="relative min-h-0 flex-1 overflow-y-auto px-5 pb-7 pt-5 sm:px-8 sm:pb-8">
+          <form onSubmit={handleSubmit} onChange={markStarted} className="relative min-h-0 flex-1 overflow-y-auto px-4 pb-7 pt-4 sm:px-7 sm:pb-8">
             {formStep === 1 ? (
               <div className="grid gap-4 sm:grid-cols-2 animate-in fade-in slide-in-from-right-2 duration-300">
                 <label className="space-y-1.5"><span className={labelClass}>Nome da empresa</span><div className="relative"><Building2 className={iconClass} /><input required value={company} onChange={(e) => setCompany(e.target.value)} className={inputClass} placeholder="Sua empresa" /></div></label>
                 <label className="space-y-1.5"><span className={labelClass}>Nome do evento</span><div className="relative"><Sparkles className={iconClass} /><input required value={eventName} onChange={(e) => setEventName(e.target.value)} className={inputClass} placeholder="Convenção anual" /></div></label>
                 <label className="space-y-1.5"><span className={labelClass}>Data do evento</span><div className="relative"><CalendarDays className={iconClass} /><input required type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} className={inputClass} /></div></label>
                 <label className="space-y-1.5"><span className={labelClass}>Quantidade estimada</span><div className="relative"><Users className={iconClass} /><input required min="1" type="number" inputMode="numeric" value={people} onChange={(e) => setPeople(e.target.value)} className={inputClass} placeholder="Número de pessoas" /></div></label>
-                <label className="space-y-1.5 sm:col-span-2"><span className={labelClass}>PDF de apresentação <span className="font-medium text-[#4A5672]">(opcional)</span></span><span className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-[#00205C]/20 bg-white/80 px-4 py-3.5 text-sm font-semibold text-[#00205C] transition hover:border-[#00205C]/50"><FileText className="size-[18px] text-[#00205C]/45" /><span className="min-w-0 flex-1 truncate">{presentation?.name || "Selecionar arquivo PDF"}</span><input type="file" accept="application/pdf,.pdf" className="sr-only" onChange={(e) => setPresentation(e.target.files?.[0] || null)} /></span></label>
+                <label className="space-y-1.5 sm:col-span-2"><span className={labelClass}>PDF de apresentação <span className="font-medium text-[#4A5672]">(opcional)</span></span><span className="flex cursor-pointer items-center gap-3 rounded-xl border-[1.5px] border-dashed border-[#9FCFE6] bg-white px-4 py-3.5 text-sm font-semibold text-[#0d2b40] transition hover:border-[#51b2dc]"><FileText className="size-[18px] text-[#0d2b40]/55" /><span className="min-w-0 flex-1 truncate">{presentation?.name || "Selecionar arquivo PDF"}</span><input type="file" accept="application/pdf,.pdf" className="sr-only" onChange={(e) => setPresentation(e.target.files?.[0] || null)} /></span></label>
               </div>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 animate-in fade-in slide-in-from-right-2 duration-300">
@@ -140,11 +148,11 @@ export function EventPartnershipModal({ open, onClose, trackingSource = "help_ca
 
             <div className="mt-6 flex items-center gap-3">
               {formStep === 2 && (
-                <button type="button" onClick={() => setFormStep(1)} className="inline-flex items-center gap-2 rounded-full border border-[#E6E1D8] bg-white px-5 py-3.5 text-sm font-bold text-[#00205C] transition hover:border-[#00205C]/40">
+                <button type="button" onClick={() => setFormStep(1)} className="inline-flex items-center gap-2 rounded-xl border-[1.5px] border-[#51b2dc] bg-white px-5 py-3.5 text-sm font-bold text-[#0d2b40] transition hover:bg-[#E7F4FA]">
                   <ArrowLeft className="size-4" /> Voltar
                 </button>
               )}
-              <button type="submit" disabled={mutation.isPending} className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-[#00205C] px-6 py-3.5 text-[15px] font-bold text-white transition hover:bg-[#003380] disabled:bg-[#00205C]/40">
+              <button type="submit" disabled={mutation.isPending} className={`${primaryButtonClass} flex-1`}>
                 {formStep === 1 ? (
                   <>Continuar <ArrowRight className="size-4" /></>
                 ) : mutation.isPending ? (

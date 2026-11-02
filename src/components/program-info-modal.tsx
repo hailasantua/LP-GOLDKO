@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
-import { ArrowUpRight, BadgeCheck, Building2, Download, FileText, Gift, HeartHandshake, MessageCircle, ShoppingBag, Sparkles, Star, Users } from "lucide-react";
-import { GoldkoSheet, SectionLabel, SheetHeader } from "@/components/goldko-sheet";
+import { ArrowUpRight, BadgeCheck, Building2, ChevronRight, Download, FileText, Gift, HeartHandshake, MessageCircle, ShoppingBag, Sparkles, Star, Users } from "lucide-react";
+import { GoldkoSheet, SectionLabel, SheetHeader, Stamp, optionRowClass, primaryButtonClass } from "@/components/goldko-sheet";
 import { trackEvent, LARA_WHATSAPP, storeClubeNutriUrl } from "@/lib/tracking";
 
 export type ProgramInfoKind = "nutri" | "empresa" | "fidelity";
@@ -145,7 +145,7 @@ export function ProgramInfoModal({ kind, onClose, trackingSource, trackingOption
 
   const nutriGroups = [
     { label: "Fale com a equipe", items: nutriOptions.filter((option) => option.action !== "pdf") },
-    { label: "Materiais para baixar", items: nutriOptions.filter((option) => option.action === "pdf") },
+    { label: "Materiais", items: nutriOptions.filter((option) => option.action === "pdf") },
   ];
   const CtaIcon = kind === "fidelity" ? ArrowUpRight : MessageCircle;
 
@@ -153,59 +153,57 @@ export function ProgramInfoModal({ kind, onClose, trackingSource, trackingOption
     <GoldkoSheet onBackdrop={closeAsAbandoned} maxWidth={kind === "nutri" ? "max-w-3xl" : "max-w-2xl"}>
         <SheetHeader eyebrow={page.eyebrow} title={page.title} intro={page.intro} onClose={closeAsAbandoned} />
 
-        <div className="relative min-h-0 flex-1 overflow-y-auto px-5 pb-7 pt-4 sm:px-8 sm:pb-8">
+        <div className="relative min-h-0 flex-1 overflow-y-auto px-4 pb-7 pt-3 sm:px-7 sm:pb-8">
           {kind === "nutri" ? (
             <div className="space-y-5">
               {nutriGroups.map((group) => (
                 <section key={group.label}>
-                  <SectionLabel>{group.label}</SectionLabel>
-                  <div className="grid gap-2.5 sm:grid-cols-3">
-                    {group.items.map(({ icon: Icon, title, text, action, href }) => {
-                      const ActionIcon = action === "pdf" ? Download : ArrowUpRight;
-                      return (
-                        <button
-                          key={title}
-                          type="button"
-                          onClick={() => void openNutriOption({ icon: Icon, title, text, action, href })}
-                          className="group flex items-start gap-3 rounded-2xl border border-[#EDE6DA] bg-white p-4 text-left transition hover:-translate-y-0.5 hover:border-[#00205C] active:translate-y-0 sm:flex-col sm:gap-3"
-                        >
-                          <span className="flex w-full items-center justify-between gap-3 max-sm:w-auto">
-                            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#E7F7FB] text-[#00205C] transition group-hover:bg-[#00205C] group-hover:text-white">
-                              <Icon className="size-5" />
-                            </span>
-                            <ActionIcon className="size-4 shrink-0 text-[#00205C]/50 transition group-hover:text-[#00205C] max-sm:hidden" />
+                  <SectionLabel aside={group.items.length > 1 ? `${group.items.length} opções` : undefined}>{group.label}</SectionLabel>
+                  <div className="grid gap-2.5 sm:grid-cols-2">
+                    {group.items.map(({ icon: Icon, title, text, action, href }) => (
+                      <button
+                        key={title}
+                        type="button"
+                        onClick={() => void openNutriOption({ icon: Icon, title, text, action, href })}
+                        className={`${optionRowClass} ${action === "pdf" ? "border-[1.5px] border-[#51b2dc]" : ""}`}
+                      >
+                        <Stamp><Icon className="size-5" /></Stamp>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-[15px] font-bold leading-snug text-[#0d2b40]">{title}</span>
+                          <span className="mt-0.5 block text-[13px] leading-snug text-[#4f4f4a]">{text}</span>
+                        </span>
+                        {action === "pdf" ? (
+                          <span className="inline-flex shrink-0 items-center gap-1 rounded-[10px] bg-[#E7F4FA] px-2.5 py-1 text-xs font-bold text-[#0d2b40]">
+                            <Download className="size-3.5" /> PDF
                           </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="block text-[15px] font-bold leading-snug text-[#00205C]">{title}</span>
-                            <span className="mt-1 block text-[13px] leading-relaxed text-[#4A5672]">{text}</span>
-                          </span>
-                          <ActionIcon className="mt-1 size-4 shrink-0 text-[#00205C]/50 sm:hidden" />
-                        </button>
-                      );
-                    })}
+                        ) : (
+                          <ChevronRight className="size-[18px] shrink-0 text-[#0d2b40] transition group-hover:translate-x-0.5" />
+                        )}
+                      </button>
+                    ))}
                   </div>
                 </section>
               ))}
             </div>
           ) : (
             <>
-              <div className="grid gap-x-6 gap-y-5 rounded-2xl border border-[#EDE6DA] bg-white/90 p-5 sm:grid-cols-2 sm:p-6">
-                {page.sections.map(({ icon: Icon, title, text }) => (
-                  <article key={title} className="flex items-start gap-3">
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#E7F7FB] text-[#00205C]"><Icon className="size-5" /></span>
-                    <div className="min-w-0">
-                      <h3 className="text-[15px] font-bold text-[#00205C]">{title}</h3>
-                      <p className="mt-1 text-[13px] leading-relaxed text-[#4A5672]">{text}</p>
+              <ul className="flex flex-col rounded-[14px] border border-[#D9D6D0] bg-white px-3.5 py-1">
+                {page.sections.map(({ icon: Icon, title, text }, index) => (
+                  <li key={title} className={`flex items-start gap-3 py-3 ${index > 0 ? "border-t border-[#EEEBE6]" : ""}`}>
+                    <Stamp small><Icon className="size-[18px]" /></Stamp>
+                    <div className="min-w-0 pt-0.5">
+                      <h3 className="text-[15px] font-bold text-[#0d2b40]">{title}</h3>
+                      <p className="mt-0.5 text-[13px] leading-relaxed text-[#4f4f4a]">{text}</p>
                     </div>
-                  </article>
+                  </li>
                 ))}
-              </div>
+              </ul>
 
-              <div className="mt-5">
-                <button type="button" onClick={() => void openCta()} className="inline-flex w-full items-center justify-center gap-2.5 rounded-full bg-[#00205C] px-7 py-4 text-[15px] font-bold text-white transition hover:-translate-y-0.5 hover:bg-[#003380] sm:w-auto">
+              <div className="mt-4">
+                <button type="button" onClick={() => void openCta()} className={primaryButtonClass}>
                   <CtaIcon className="size-5" />{page.cta}
                 </button>
-                {kind !== "fidelity" && <p className="mt-2 text-xs text-[#4A5672] sm:ml-2 sm:inline">Atendimento pelo WhatsApp</p>}
+                {kind !== "fidelity" && <p className="mt-2 text-center text-xs text-[#4f4f4a]">Atendimento pelo WhatsApp</p>}
               </div>
             </>
           )}
