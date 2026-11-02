@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Send, ChevronRight, Check, Loader2, FileText, ExternalLink, MessageCircle, Heart, Building2, Leaf, X, type LucideIcon } from "lucide-react";
-import { GoldkoAvatar } from "@/components/goldko-sheet";
+import { ArrowRight, ChevronRight, Check, Loader2, FileText, ExternalLink, MessageCircle, Heart, Building2, Leaf, X, type LucideIcon } from "lucide-react";
+import { Stamp } from "@/components/goldko-sheet";
 import { createChatLeadServerFn, createFeedbackServerFn } from "@/lib/chat-leads.functions";
 import { trackEvent, currentStore, storeWhatsAppUrl, storeIfoodUrl, storeClubeNutriUrl, LARA_WHATSAPP } from "@/lib/tracking";
 
@@ -36,10 +36,10 @@ const SEGMENTS: { value: Segment; label: string }[] = [
 ];
 
 /** Visual dos cartões de perfil: ícone, cores e descrição curta. */
-const SEGMENT_CARDS: Record<string, { description: string; Icon: LucideIcon; iconClass: string }> = {
-  cliente: { description: "Loja, iFood, cardápio, fidelidade", Icon: Heart, iconClass: "bg-[#E7F7FB] text-[#00205C]" },
-  empresa: { description: "Kits corporativos e eventos", Icon: Building2, iconClass: "bg-[#FDF0E4] text-[#B8611D]" },
-  clube_nutri: { description: "Para nutricionistas", Icon: Leaf, iconClass: "bg-[#E8F6EF] text-[#23795A]" },
+const SEGMENT_CARDS: Record<string, { description: string; Icon: LucideIcon; badge?: boolean }> = {
+  cliente: { description: "Loja, iFood, fidelidade", Icon: Heart },
+  empresa: { description: "Kits corporativos e eventos", Icon: Building2 },
+  clube_nutri: { description: "Para nutricionistas", Icon: Leaf, badge: true },
 };
 
 const FIDELITY_URL = "https://app.fidelo.com.br/getpass/eavFmj?utm_source=qr";
@@ -176,15 +176,26 @@ function formatPhone(digits: string): string {
   return digits;
 }
 
+/** Mascote dentro do selo recortado (só na mensagem mais recente da assistente). */
+function MascotStamp() {
+  return (
+    <span className="gk-stamp" style={{ width: 40, height: 40 }} aria-hidden="true">
+      <span style={{ width: 32, height: 32 }}>
+        <img src="/chat-avatar-goldko.png" alt="" className="h-full w-full rounded-full object-contain" />
+      </span>
+    </span>
+  );
+}
+
 function TypingIndicator() {
   return (
     <div className="flex items-end gap-2.5 animate-in fade-in duration-200">
-      <GoldkoAvatar size="sm" ring={false} />
-      <div className="rounded-[18px] rounded-bl-md border border-[#EDE6DA] bg-white px-4 py-3.5">
+      <MascotStamp />
+      <div className="rounded-[14px] rounded-bl-[4px] border border-[#D9D6D0] bg-white px-4 py-3.5">
         <div className="flex items-center gap-1.5">
-          <div className="size-2 rounded-full bg-[#00205C]/40" style={{ animation: "bounce 1.2s infinite", animationDelay: "0s" }} />
-          <div className="size-2 rounded-full bg-[#00205C]/40" style={{ animation: "bounce 1.2s infinite", animationDelay: "0.2s" }} />
-          <div className="size-2 rounded-full bg-[#00205C]/40" style={{ animation: "bounce 1.2s infinite", animationDelay: "0.4s" }} />
+          <div className="size-2 rounded-full bg-[#51b2dc]" style={{ animation: "bounce 1.2s infinite", animationDelay: "0s" }} />
+          <div className="size-2 rounded-full bg-[#51b2dc]" style={{ animation: "bounce 1.2s infinite", animationDelay: "0.2s" }} />
+          <div className="size-2 rounded-full bg-[#51b2dc]" style={{ animation: "bounce 1.2s infinite", animationDelay: "0.4s" }} />
         </div>
       </div>
     </div>
@@ -196,11 +207,13 @@ function MessageBubble({
   step,
   selectedChips,
   onChipClick,
+  showAvatar = false,
 }: {
   msg: ChatMessage;
   step: Step;
   selectedChips: string[];
   onChipClick: (v: string) => void;
+  showAvatar?: boolean;
 }) {
   const isBot = msg.from === "bot";
   const chipsActive =
@@ -211,17 +224,13 @@ function MessageBubble({
 
   return (
     <div className={`flex gap-2.5 ${isBot ? "items-start" : "flex-row-reverse items-end"} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
-      {isBot && (
-        <span className="mt-1.5">
-          <GoldkoAvatar size="sm" ring={false} />
-        </span>
-      )}
+      {isBot && (showAvatar ? <span className="mt-1"><MascotStamp /></span> : <span aria-hidden="true" className="w-10 shrink-0" />)}
       <div className={`max-w-[86%] ${isBot ? "" : "items-end flex flex-col"}`}>
         <div
-          className={`rounded-[18px] px-4 py-3 text-[15px] leading-relaxed [&_strong]:font-bold ${
+          className={`rounded-[14px] px-4 py-3 text-[15px] leading-relaxed [&_strong]:font-bold ${
             isBot
-              ? "rounded-bl-md border border-[#EDE6DA] bg-white text-[#3A4660] [&_strong]:text-[#00205C]"
-              : "rounded-br-md bg-[#00205C] text-white"
+              ? "rounded-bl-[4px] border border-[#D9D6D0] bg-white text-[#4f4f4a] [&_strong]:text-[#0d2b40]"
+              : "rounded-br-[4px] bg-[#51b2dc] font-semibold text-[#0d2b40]"
           }`}
           dangerouslySetInnerHTML={{ __html: msg.text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>").replace(/\n/g, "<br/>") }}
         />
@@ -238,22 +247,25 @@ function MessageBubble({
                   type="button"
                   onClick={() => !disabled && onChipClick(chip.value)}
                   disabled={disabled}
-                  className={`flex w-full items-center gap-3 rounded-2xl border bg-white p-3.5 text-left transition-all duration-150 ${
+                  className={`flex w-full items-center gap-3 rounded-[14px] border bg-white p-3 text-left transition-all duration-150 ${
                     isSel
-                      ? "border-[#00205C] ring-1 ring-[#00205C]"
+                      ? "border-[1.5px] border-[#51b2dc]"
                       : disabled
-                        ? "cursor-default border-[#EDE6DA] opacity-50"
-                        : "cursor-pointer border-[#EDE6DA] hover:border-[#00205C] active:scale-[0.99]"
+                        ? "cursor-default border-[#D9D6D0] opacity-50"
+                        : "cursor-pointer border-[#D9D6D0] hover:border-[#51b2dc] active:scale-[0.99]"
                   }`}
                 >
-                  <span className={`flex size-[42px] shrink-0 items-center justify-center rounded-xl ${card?.iconClass ?? ""}`}>
-                    <Icon className="size-[22px]" />
-                  </span>
+                  <Stamp><Icon className="size-5" /></Stamp>
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <span className="text-[15px] font-bold text-[#00205C]">{chip.label}</span>
-                    {card && <span className="text-[13px] text-[#4A5672]">{card.description}</span>}
+                    <span className="text-[15px] font-bold text-[#0d2b40]">{chip.label}</span>
+                    {card &&
+                      (card.badge ? (
+                        <span className="mt-1 self-start rounded-md bg-[#E5F3EA] px-2 py-0.5 text-[11px] font-semibold text-[#23613F]">{card.description}</span>
+                      ) : (
+                        <span className="text-[13px] text-[#4f4f4a]">{card.description}</span>
+                      ))}
                   </span>
-                  {isSel ? <Check className="size-[18px] shrink-0 text-[#00205C]" /> : <ChevronRight className="size-[18px] shrink-0 text-[#00205C]" />}
+                  {isSel ? <Check className="size-[18px] shrink-0 text-[#0d2b40]" /> : <ChevronRight className="size-[18px] shrink-0 text-[#0d2b40]" />}
                 </button>
               );
             })}
@@ -269,12 +281,12 @@ function MessageBubble({
                   key={chip.value}
                   onClick={() => !disabled && onChipClick(chip.value)}
                   disabled={disabled}
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2.5 text-sm font-semibold leading-none transition-all duration-150 ${
+                  className={`inline-flex min-h-[38px] items-center gap-1.5 rounded-[10px] border-[1.5px] px-3.5 py-2 text-sm font-semibold leading-none transition-all duration-150 ${
                     isSel
-                      ? "border-[#00205C] bg-[#00205C] text-white"
+                      ? "border-[#51b2dc] bg-[#51b2dc] text-[#0d2b40]"
                       : disabled
-                        ? "cursor-default border-[#E6E1D8] bg-white/70 text-[#00205C]/35"
-                        : "cursor-pointer border-[#BDE8F2] bg-[#E7F7FB] text-[#00205C] hover:border-[#00205C] hover:bg-[#00205C] hover:text-white active:scale-[0.97]"
+                        ? "cursor-default border-[#E2DED8] bg-white text-[#8A8A84]"
+                        : "cursor-pointer border-[#CFE6F2] bg-white text-[#0d2b40] hover:border-[#51b2dc] hover:bg-[#E7F4FA] active:scale-[0.97]"
                   }`}
                 >
                   {isSel && <Check className="size-3.5 shrink-0" />}
@@ -302,11 +314,9 @@ function MessageBubble({
                     resource_type: "pdf",
                   });
                 }}
-                className="flex items-center gap-3 rounded-2xl border border-[#EDE6DA] bg-white px-4 py-3 text-left text-sm font-semibold text-[#00205C] transition hover:border-[#00205C] active:scale-[0.99]"
+                className="flex items-center gap-3 rounded-[14px] border border-[#D9D6D0] bg-white px-3 py-2.5 text-left text-sm font-semibold text-[#0d2b40] transition hover:border-[#51b2dc] active:scale-[0.99]"
               >
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#E7F7FB]">
-                  <FileText className="size-4" />
-                </span>
+                <Stamp small><FileText className="size-4" /></Stamp>
                 <span className="min-w-0 flex-1">{resource.label}</span>
                 <ExternalLink className="size-4 shrink-0" />
               </a>
@@ -731,6 +741,7 @@ export function ChatLead({
       .join("\n"),
   )}`;
   const showTextInput = ["company", "name", "phone", "q1"].includes(step);
+  const lastBotMsgId = [...messages].reverse().find((msg) => msg.from === "bot")?.id;
   const showMultiConfirm = step === "q2";
   const contactAllowsEmail = step === "phone" && lead.segment === "empresa";
   const inputPlaceholder =
@@ -760,26 +771,26 @@ export function ChatLead({
       }}
     >
       <div
-        className="relative flex h-full w-full max-w-lg flex-col overflow-hidden rounded-none bg-[#FFFBF5] shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300 sm:h-[min(700px,96dvh)] sm:rounded-[1.75rem]"
+        className="relative flex h-full w-full max-w-lg flex-col overflow-hidden rounded-none bg-[#F6F5F3] text-[#0d2b40] shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300 sm:h-[min(700px,96dvh)] sm:rounded-[1.5rem]"
       >
         {feedbackOpen && (
           <div className="absolute inset-0 z-50 flex items-end bg-[#001433]/70 p-3 backdrop-blur-sm sm:items-center sm:justify-center">
-            <form onSubmit={submitFeedback} className="w-full rounded-[1.5rem] bg-white p-5 shadow-2xl sm:max-w-md">
-              <h3 className="font-display text-2xl font-bold uppercase text-[#00205C]">Sugestão ou reclamação</h3>
+            <form onSubmit={submitFeedback} className="w-full rounded-[1.25rem] bg-[#F6F5F3] p-5 shadow-2xl sm:max-w-md">
+              <h3 className="gk-tag is-small"><span>Sugestão ou reclamação</span></h3>
               <p className="mt-1 text-sm text-gray-500">Nome e telefone são opcionais.</p>
               <div className="mt-4 space-y-3">
                 <input
                   value={feedbackName}
                   onChange={(event) => setFeedbackName(event.target.value)}
                   placeholder="Seu nome (opcional)"
-                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base outline-none focus:border-[#42C8E5]"
+                  className="w-full rounded-xl border border-[#D9D6D0] bg-white px-4 py-3 text-base outline-none focus:border-[#51b2dc]"
                 />
                 <input
                   value={feedbackPhone}
                   onChange={(event) => setFeedbackPhone(event.target.value)}
                   placeholder="Seu telefone (opcional)"
                   inputMode="tel"
-                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base outline-none focus:border-[#42C8E5]"
+                  className="w-full rounded-xl border border-[#D9D6D0] bg-white px-4 py-3 text-base outline-none focus:border-[#51b2dc]"
                 />
                 <textarea
                   required
@@ -787,36 +798,28 @@ export function ChatLead({
                   value={feedbackMessage}
                   onChange={(event) => setFeedbackMessage(event.target.value)}
                   placeholder="Escreva sua sugestão ou reclamação"
-                  className="w-full resize-none rounded-xl border border-gray-200 px-4 py-3 text-base outline-none focus:border-[#42C8E5]"
+                  className="w-full resize-none rounded-xl border border-[#D9D6D0] bg-white px-4 py-3 text-base outline-none focus:border-[#51b2dc]"
                 />
               </div>
               <div className="mt-4 flex justify-end gap-2">
-                <button type="button" onClick={() => setFeedbackOpen(false)} className="rounded-full border border-gray-200 px-5 py-2.5 text-sm font-bold text-gray-600">Cancelar</button>
-                <button type="submit" disabled={!feedbackMessage.trim()} className="rounded-full bg-[#00205C] px-5 py-2.5 text-sm font-bold text-white disabled:bg-[#00205C]/25">Enviar</button>
+                <button type="button" onClick={() => setFeedbackOpen(false)} className="rounded-xl border-[1.5px] border-[#51b2dc] bg-white px-5 py-2.5 text-sm font-bold text-[#0d2b40]">Cancelar</button>
+                <button type="submit" disabled={!feedbackMessage.trim()} className="rounded-xl bg-[#51b2dc] px-5 py-2.5 text-sm font-bold text-[#0d2b40] disabled:opacity-50">Enviar</button>
               </div>
             </form>
           </div>
         )}
-        {/* CABEÇALHO: personagem + passos */}
-        <header className="relative z-10 flex shrink-0 flex-col gap-3 border-b border-[#EDE6DA] bg-white px-4 pt-3.5 pb-3">
-          <div className="flex items-center gap-3">
-            <span className="flex size-[42px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#E7F7FB]">
-              <img src="/chat-avatar-goldko.png" alt="Assistente GoldKo" className="h-full w-full object-contain" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-base font-bold leading-tight text-[#00205C]">
-                {lead.segment ? SEGMENT_GREETINGS[lead.segment].chatTitle : "Assistente GoldKo"}
-              </p>
-              <p className="mt-0.5 flex items-center gap-1.5 text-xs text-[#4A5672]">
-                <span className="size-[7px] rounded-full bg-[#2E9E75]" />
-                Assistente online
-              </p>
-            </div>
+        {/* CABEÇALHO: etiqueta-ticket + passos (estilo do cardápio online) */}
+        <header className="relative z-10 flex shrink-0 flex-col gap-3 border-b border-[#E2DED8] bg-[#F6F5F3] px-4 pt-4 pb-3.5">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="gk-tag min-w-0">
+              <span className="truncate">{lead.segment ? SEGMENT_GREETINGS[lead.segment].chatTitle : "Assistente GoldKo"}</span>
+              <i aria-hidden="true" />
+            </h2>
             <button
               type="button"
               onClick={closeAsAbandoned}
               aria-label="Fechar"
-              className="flex size-11 shrink-0 items-center justify-center rounded-full border border-[#EDE6DA] bg-white text-[#00205C] transition hover:bg-[#E7F7FB]"
+              className="flex size-[46px] shrink-0 items-center justify-center rounded-xl bg-[#51b2dc] text-[#0d2b40] transition hover:bg-[#6cc0e4]"
             >
               <X className="size-5" />
             </button>
@@ -826,34 +829,24 @@ export function ChatLead({
               {Array.from({ length: TOTAL_STEPS }, (_, index) => (
                 <div
                   key={index}
-                  className={`h-1 rounded-full transition-colors duration-300 ${
+                  className={`h-[5px] rounded-full transition-colors duration-300 ${
                     index + 1 < currentStepNumber
-                      ? "bg-[#00205C]"
+                      ? "bg-[#0d2b40]"
                       : index + 1 === currentStepNumber
-                        ? "bg-[#42C8E5]"
-                        : "bg-[#E6EEF7]"
+                        ? "bg-[#51b2dc]"
+                        : "bg-[#E2DED8]"
                   }`}
                 />
               ))}
             </div>
-            <span className="text-xs font-bold text-[#4A5672]">
+            <span className="text-xs font-semibold text-[#4f4f4a]">
               Passo {currentStepNumber} de {TOTAL_STEPS}
             </span>
           </div>
         </header>
 
         {/* MENSAGENS */}
-        <div className="relative min-h-0 flex-1 bg-[#FFFBF5]">
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 opacity-[0.22]"
-            style={{
-              backgroundImage: 'url("/chat-conversation-background.png")',
-              backgroundPosition: "center",
-              backgroundRepeat: "no-repeat",
-              backgroundSize: "cover",
-            }}
-          />
+        <div className="relative min-h-0 flex-1 bg-[#F6F5F3]">
         <div className="relative h-full overflow-y-auto overscroll-contain px-4 pb-5 pt-6 space-y-4 sm:px-5">
           {messages.map((msg) => (
             <MessageBubble
@@ -862,6 +855,7 @@ export function ChatLead({
               step={step}
               selectedChips={msg.id === lastChipMsgId ? selectedChips : []}
               onChipClick={handleChipClick}
+              showAvatar={!typing && msg.id === lastBotMsgId}
             />
           ))}
           {typing && <TypingIndicator />}
@@ -881,7 +875,7 @@ export function ChatLead({
                       destination: LARA_WHATSAPP,
                     });
                   }}
-                  className="inline-flex items-center gap-2 rounded-full bg-[#00205C] px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#003380]"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#51b2dc] px-5 py-3 text-sm font-bold text-[#0d2b40] transition-colors hover:bg-[#6cc0e4]"
                 >
                   <MessageCircle className="size-4" /> Falar no WhatsApp
                 </a>
@@ -889,14 +883,14 @@ export function ChatLead({
                 <a
                   href="#descubra"
                   onClick={onClose}
-                  className="inline-flex items-center gap-2 rounded-full bg-[#00205C] px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#003380]"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#51b2dc] px-5 py-3 text-sm font-bold text-[#0d2b40] transition-colors hover:bg-[#6cc0e4]"
                 >
                   Conhecer produtos <ChevronRight className="size-4" />
                 </a>
               )}
               <button
                 onClick={onClose}
-                className="inline-flex items-center gap-2 rounded-full border border-[#E6E1D8] bg-white px-5 py-2.5 text-sm font-bold text-[#00205C]/70 transition-colors hover:border-[#00205C]/40"
+                className="inline-flex items-center gap-2 rounded-xl border-[1.5px] border-[#51b2dc] bg-white px-5 py-3 text-sm font-bold text-[#0d2b40] transition-colors hover:bg-[#E7F4FA]"
               >
                 Fechar
               </button>
@@ -908,7 +902,7 @@ export function ChatLead({
 
         {/* ÁREA DE ENTRADA / BOTÕES */}
         {(showTextInput || showMultiConfirm) && (
-          <div className="relative z-10 shrink-0 border-t border-[#EDE6DA] bg-white px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="relative z-10 shrink-0 border-t border-[#E2DED8] bg-[#F6F5F3] px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             {showTextInput ? (
               <>
               <form
@@ -931,7 +925,7 @@ export function ChatLead({
                     );
                   }}
                   placeholder={inputPlaceholder}
-                  className="flex-1 rounded-full border border-[#E6E1D8] bg-[#FFFBF5] px-4 py-2.5 text-base text-[#00205C] outline-none transition-colors placeholder:text-[#00205C]/40 focus:border-[#42C8E5] focus:bg-white focus:ring-2 focus:ring-[#42C8E5]/20 sm:text-sm"
+                  className="h-12 flex-1 rounded-xl border border-[#D9D6D0] bg-white px-3.5 text-base text-[#0d2b40] outline-none transition-colors placeholder:text-[#8A8A84] focus:border-[#51b2dc] focus:ring-2 focus:ring-[#51b2dc]/25 sm:text-sm"
                   style={{ fontSize: "16px" }}
                   autoComplete={step === "company" ? "organization" : step === "phone" ? (contactAllowsEmail ? "on" : "tel") : "name"}
                   inputMode={contactAllowsEmail ? "email" : step === "phone" || step === "q1" ? "numeric" : "text"}
@@ -939,16 +933,16 @@ export function ChatLead({
                 <button
                   type="submit"
                   disabled={!inputValue.trim()}
-                  className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#00205C] text-white transition hover:bg-[#003380] disabled:cursor-not-allowed disabled:bg-[#00205C]/25"
+                  className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-[#51b2dc] text-[#0d2b40] transition hover:bg-[#6cc0e4] disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <Send className="size-4" />
+                  <ArrowRight className="size-5" />
                 </button>
               </form>
               {contactError && <p role="alert" className="px-2 pt-2 text-xs font-medium text-red-600">{contactError}</p>}
               </>
             ) : (
               <div className="flex items-center justify-between gap-3">
-                <p className="text-xs font-medium text-[#4A5672]">
+                <p className="text-xs font-medium text-[#4f4f4a]">
                   {selectedChips.length === 0
                     ? "Selecione ao menos uma opção"
                     : `${selectedChips.length} opção(ões) selecionada(s)`}
@@ -956,7 +950,7 @@ export function ChatLead({
                 <button
                   onClick={handleQ2Confirm}
                   disabled={selectedChips.length === 0 || saving}
-                  className="inline-flex items-center gap-2 rounded-full bg-[#00205C] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#003380] disabled:cursor-not-allowed disabled:bg-[#00205C]/25"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#51b2dc] px-5 py-3 text-sm font-bold text-[#0d2b40] transition hover:bg-[#6cc0e4] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {saving ? (
                     <>
