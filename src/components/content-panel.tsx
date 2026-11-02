@@ -114,6 +114,7 @@ function contentWithoutDeviceVersions(content: SiteContent): SiteContent {
 }
 import { JourneyAnalytics } from "./journey-analytics";
 import { LeadsPanel } from "./leads-panel";
+import { ClubeNutriAnalytics } from "./clube-nutri-analytics";
 
 function isAdmin(user: User | null) {
   return user?.app_metadata?.["role"] === "admin" || user?.email === "goldkorv@gmail.com";
@@ -191,11 +192,12 @@ export function ContentPanel() {
   });
 
   // Aba ativa no painel administrativo.
-  const [adminTab, setAdminTab] = useState<"pages" | "journey" | "leads">(() => {
+  const [adminTab, setAdminTab] = useState<"pages" | "journey" | "leads" | "clube">(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       if (params.get("tab") === "journey") return "journey";
       if (params.get("tab") === "leads") return "leads";
+      if (params.get("tab") === "clube") return "clube";
     }
     return "pages";
   });
@@ -779,6 +781,11 @@ export function ContentPanel() {
               >Leads</button>
               <button
                 type="button"
+                onClick={() => { setAdminTab("clube"); window.history.pushState(null, "", "/painel?tab=clube"); }}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 sm:px-4 py-1.5 text-xs font-bold whitespace-nowrap transition ${adminTab === "clube" ? "bg-[#ff8515] text-white shadow-xs" : "text-gray-500 hover:text-gray-900"}`}
+              >Clube da Nutri</button>
+              <button
+                type="button"
                 onClick={() => {
                   setAdminTab("pages");
                   if (typeof window !== "undefined") {
@@ -828,7 +835,9 @@ export function ContentPanel() {
           <LeadsPanel />
         ) : (
         <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 md:py-12 lg:px-8">
-          {adminTab === "journey" ? (
+          {adminTab === "clube" ? (
+            <ClubeNutriAnalytics />
+          ) : adminTab === "journey" ? (
             <JourneyAnalytics
               onOpenLeads={() => {
                 setAdminTab("leads");
