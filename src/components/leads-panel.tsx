@@ -393,7 +393,7 @@ export function LeadsPanel() {
   const openLead = leads.find((lead) => lead.id === openId) || null;
 
   return (
-    <div className="flex h-[calc(100dvh-4rem)] flex-col overflow-hidden bg-[#F8F8F8]">
+    <div className="flex h-[calc(100dvh-7.25rem)] flex-col overflow-hidden bg-[#F8F8F8] md:h-[calc(100dvh-4rem)]">
       {/* BARRA DO QUADRO */}
       <div className="flex shrink-0 flex-wrap items-center gap-3 px-4 pt-5 md:px-6 md:pt-6">
         <div

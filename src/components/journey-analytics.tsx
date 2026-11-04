@@ -157,9 +157,9 @@ function Kpi({
   children?: React.ReactNode;
 }) {
   return (
-    <article className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5">
-      <p className="text-sm text-gray-500">{label}</p>
-      <p className="mt-1 text-3xl font-bold tabular-nums text-[#00205C]">{value}</p>
+    <article className="min-w-0 rounded-2xl border border-gray-200 bg-white p-4 sm:p-5">
+      <p className="text-sm leading-snug text-gray-500">{label}</p>
+      <p className="mt-1 text-2xl font-bold tabular-nums text-[#00205C] sm:text-3xl">{value}</p>
       <div className="mt-1 min-h-4">{children}</div>
     </article>
   );
@@ -175,7 +175,7 @@ function Panel({
   footer?: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-5">
+    <section className="min-w-0 rounded-2xl border border-gray-200 bg-white p-4 sm:p-5">
       <h2 className="text-base font-semibold text-[#00205C]">{title}</h2>
       <div className="mt-4">{children}</div>
       {footer && <div className="mt-4 text-sm">{footer}</div>}
@@ -300,11 +300,11 @@ export function JourneyAnalytics({ onOpenLeads }: { onOpenLeads?: () => void }) 
   return (
     <section className="space-y-5">
       {/* BARRA: PERÍODO E AÇÕES */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:flex-wrap">
         <div
           role="radiogroup"
           aria-label="Período"
-          className="flex rounded-xl border border-gray-200 bg-white p-1 shadow-sm"
+          className="col-span-2 grid grid-cols-3 rounded-xl border border-gray-200 bg-white p-1 shadow-sm sm:col-span-1 sm:flex"
         >
           {PERIODS.map((days) => (
             <button
@@ -313,7 +313,7 @@ export function JourneyAnalytics({ onOpenLeads }: { onOpenLeads?: () => void }) 
               role="radio"
               aria-checked={period === days}
               onClick={() => setPeriod(days)}
-              className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold transition ${
+              className={`rounded-lg px-2 py-2 text-xs font-semibold transition sm:px-3.5 sm:py-1.5 ${
                 period === days
                   ? "bg-[#EEF6FB] text-[#00205C] ring-1 ring-[#42C8E5]/50"
                   : "text-gray-600 hover:bg-gray-50"
@@ -327,7 +327,7 @@ export function JourneyAnalytics({ onOpenLeads }: { onOpenLeads?: () => void }) 
           value={store}
           onChange={(event) => setStore(event.target.value as StoreId | "todas")}
           aria-label="Filtrar por loja"
-          className={`rounded-xl border bg-white px-3 py-2 text-xs font-semibold shadow-sm outline-none focus:border-[#42C8E5] ${
+          className={`min-w-0 w-full rounded-xl border bg-white px-3 py-2 text-xs font-semibold shadow-sm outline-none focus:border-[#42C8E5] sm:w-auto ${
             store === "todas"
               ? "border-gray-200 text-gray-600"
               : "border-[#42C8E5]/60 bg-[#EEF6FB] text-[#00205C]"
@@ -340,12 +340,12 @@ export function JourneyAnalytics({ onOpenLeads }: { onOpenLeads?: () => void }) 
             </option>
           ))}
         </select>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="flex shrink-0 items-center justify-end gap-2 sm:ml-auto">
           <button
             type="button"
             onClick={() => void load()}
             disabled={loading}
-            className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-[#00205C] transition hover:bg-gray-50 disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-[#00205C] transition hover:bg-gray-50 disabled:opacity-60 sm:px-4"
           >
             <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} /> Atualizar
           </button>
@@ -363,7 +363,7 @@ export function JourneyAnalytics({ onOpenLeads }: { onOpenLeads?: () => void }) 
               <MoreHorizontal className="size-4" />
             </button>
             {menuOpen && (
-              <div className="absolute right-0 top-11 z-20 w-72 rounded-xl border border-gray-200 bg-white p-2 shadow-lg">
+              <div className="absolute right-0 top-11 z-20 w-[min(18rem,calc(100vw-1.5rem))] rounded-xl border border-gray-200 bg-white p-2 shadow-lg">
                 {confirmClear ? (
                   <div className="p-2">
                     <p className="text-sm font-semibold text-[#00205C]">Apagar todo o histórico?</p>
@@ -416,7 +416,7 @@ export function JourneyAnalytics({ onOpenLeads }: { onOpenLeads?: () => void }) 
       ) : (
         <>
           {/* INDICADORES */}
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
             <Kpi label="Visitantes" value={fmt.format(current.visitors)}>
               <Delta current={current.visitors} previous={previous.visitors} />
             </Kpi>
@@ -512,7 +512,7 @@ export function JourneyAnalytics({ onOpenLeads }: { onOpenLeads?: () => void }) 
             <Panel
               title="Cards do site"
               footer={
-                <p className="flex items-center gap-3 text-xs text-gray-500">
+                <p className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-gray-500">
                   <span className="inline-flex items-center gap-1.5">
                     <span className="h-2 w-4 rounded-full bg-gray-200" /> clicaram
                   </span>
@@ -584,7 +584,7 @@ export function JourneyAnalytics({ onOpenLeads }: { onOpenLeads?: () => void }) 
                 {activeDestinations.map((item) => (
                   <li
                     key={item.key}
-                    className="grid grid-cols-[minmax(0,180px)_1fr_40px] items-center gap-3 text-sm"
+                    className="grid grid-cols-[minmax(0,1fr)_3rem] items-center gap-x-3 gap-y-1.5 text-sm sm:grid-cols-[minmax(0,180px)_1fr_40px] sm:gap-y-0"
                   >
                     <span className="truncate text-gray-700">
                       {item.label}
@@ -593,7 +593,7 @@ export function JourneyAnalytics({ onOpenLeads }: { onOpenLeads?: () => void }) 
                       )}
                     </span>
                     <div
-                      className="h-2.5 overflow-hidden rounded-full bg-gray-100"
+                      className="order-3 col-span-2 h-2.5 overflow-hidden rounded-full bg-gray-100 sm:order-none sm:col-span-1"
                       role="img"
                       aria-label={`${item.label}: ${item.people}`}
                     >

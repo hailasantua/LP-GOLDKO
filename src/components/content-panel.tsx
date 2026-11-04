@@ -761,29 +761,35 @@ export function ContentPanel() {
     return (
       <div className="min-h-screen bg-[#F8F8F8] text-gray-900">
         {/* TOPBAR DO DASHBOARD */}
-        <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-gray-200 bg-white/90 px-4 backdrop-blur-md md:px-8">
-          <div className="flex items-center gap-3 sm:gap-6">
-            <span className="font-display text-lg font-bold uppercase tracking-wide text-[#00205C]">
+        <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/95 backdrop-blur-md">
+          <div className="flex min-h-16 flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3 md:flex-nowrap md:px-8 md:py-0">
+            <span className="font-display shrink-0 text-lg font-bold uppercase tracking-wide text-[#00205C]">
               GoldKo <span className="text-[#ff8515]">Painel</span>
             </span>
 
             {/* ABAS DE NAVEGAÇÃO DO PAINEL */}
-            <nav className="flex items-center rounded-full bg-gray-100 p-1 border border-gray-200/80">
+            <nav
+              aria-label="Seções do painel"
+              className="order-3 grid w-full grid-cols-4 items-stretch rounded-2xl border border-gray-200/80 bg-gray-100 p-1 md:order-none md:flex md:w-auto md:items-center md:rounded-full"
+            >
               <button
                 type="button"
                 onClick={() => { setAdminTab("journey"); window.history.pushState(null, "", "/painel?tab=journey"); }}
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 sm:px-4 py-1.5 text-xs font-bold transition ${adminTab === "journey" ? "bg-[#42C8E5] text-[#00205C] shadow-xs" : "text-gray-500 hover:text-gray-900"}`}
+                className={`inline-flex min-w-0 items-center justify-center rounded-xl px-2 py-2 text-[11px] font-bold transition sm:px-4 sm:text-xs md:rounded-full md:py-1.5 ${adminTab === "journey" ? "bg-[#42C8E5] text-[#00205C] shadow-xs" : "text-gray-500 hover:text-gray-900"}`}
               >Jornada</button>
               <button
                 type="button"
                 onClick={() => { setAdminTab("leads"); window.history.pushState(null, "", "/painel?tab=leads"); }}
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 sm:px-4 py-1.5 text-xs font-bold transition ${adminTab === "leads" ? "bg-[#42C8E5] text-[#00205C] shadow-xs" : "text-gray-500 hover:text-gray-900"}`}
+                className={`inline-flex min-w-0 items-center justify-center rounded-xl px-2 py-2 text-[11px] font-bold transition sm:px-4 sm:text-xs md:rounded-full md:py-1.5 ${adminTab === "leads" ? "bg-[#42C8E5] text-[#00205C] shadow-xs" : "text-gray-500 hover:text-gray-900"}`}
               >Leads</button>
               <button
                 type="button"
                 onClick={() => { setAdminTab("clube"); window.history.pushState(null, "", "/painel?tab=clube"); }}
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 sm:px-4 py-1.5 text-xs font-bold whitespace-nowrap transition ${adminTab === "clube" ? "bg-[#ff8515] text-white shadow-xs" : "text-gray-500 hover:text-gray-900"}`}
-              >Clube da Nutri</button>
+                className={`inline-flex min-w-0 items-center justify-center rounded-xl px-2 py-2 text-[11px] font-bold whitespace-nowrap transition sm:px-4 sm:text-xs md:rounded-full md:py-1.5 ${adminTab === "clube" ? "bg-[#ff8515] text-white shadow-xs" : "text-gray-500 hover:text-gray-900"}`}
+              >
+                <span className="sm:hidden">Clube</span>
+                <span className="hidden sm:inline">Clube da Nutri</span>
+              </button>
               <button
                 type="button"
                 onClick={() => {
@@ -792,7 +798,7 @@ export function ContentPanel() {
                     window.history.pushState(null, "", "/painel");
                   }
                 }}
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 sm:px-4 py-1.5 text-xs font-bold transition ${
+                className={`inline-flex min-w-0 items-center justify-center rounded-xl px-2 py-2 text-[11px] font-bold transition sm:px-4 sm:text-xs md:rounded-full md:py-1.5 ${
                   adminTab === "pages"
                     ? "bg-white text-[#00205C] shadow-xs"
                     : "text-gray-500 hover:text-gray-900"
@@ -800,33 +806,32 @@ export function ContentPanel() {
               >
                 <span>Páginas</span>
               </button>
-
             </nav>
-          </div>
 
-          <div className="flex items-center gap-3">
-            <span className="hidden text-xs text-gray-400 sm:inline">
-              Logado como <strong className="text-gray-700">{user.email}</strong>
-            </span>
+            <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
+              <span className="hidden text-xs text-gray-400 lg:inline">
+                Logado como <strong className="text-gray-700">{user.email}</strong>
+              </span>
 
-            <a
-              href="/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex size-9 items-center justify-center rounded-full border border-gray-200 text-gray-600 transition hover:bg-gray-100 hover:text-gray-900"
-              title="Ver site principal em nova aba"
-            >
-              <Globe className="size-4" />
-            </a>
+              <a
+                href="/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex size-10 items-center justify-center rounded-full border border-gray-200 text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 md:size-9"
+                title="Ver site principal em nova aba"
+              >
+                <Globe className="size-4" />
+              </a>
 
-            <button
-              type="button"
-              onClick={() => void supabase.auth.signOut()}
-              className="inline-flex size-9 items-center justify-center rounded-full border border-gray-200 text-gray-600 transition hover:bg-red-50 hover:text-red-600"
-              title="Sair do painel"
-            >
-              <LogOut className="size-4" />
-            </button>
+              <button
+                type="button"
+                onClick={() => void supabase.auth.signOut()}
+                className="inline-flex size-10 items-center justify-center rounded-full border border-gray-200 text-gray-600 transition hover:bg-red-50 hover:text-red-600 md:size-9"
+                title="Sair do painel"
+              >
+                <LogOut className="size-4" />
+              </button>
+            </div>
           </div>
         </header>
 
@@ -834,7 +839,7 @@ export function ContentPanel() {
         {adminTab === "leads" ? (
           <LeadsPanel />
         ) : (
-        <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 md:py-12 lg:px-8">
+        <main className="mx-auto max-w-7xl px-3 py-5 sm:px-6 sm:py-8 md:py-12 lg:px-8">
           {adminTab === "clube" ? (
             <ClubeNutriAnalytics />
           ) : adminTab === "journey" ? (
