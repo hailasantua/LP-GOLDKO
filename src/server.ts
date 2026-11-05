@@ -9,6 +9,12 @@ type ServerEntry = {
 
 let serverEntryPromise: Promise<ServerEntry> | undefined;
 
+const customDomainHomePaths: Record<string, string> = {
+  "flamboyant.goldko.online": "/flamboyant",
+  "buriti.goldko.online": "/buriti",
+  "crm.goldko.online": "/painel",
+};
+
 async function getServerEntry(): Promise<ServerEntry> {
   if (!serverEntryPromise) {
     serverEntryPromise = import("@tanstack/react-start/server-entry").then(
@@ -44,11 +50,21 @@ function isH3SwallowedErrorBody(body: string): boolean {
   }
 }
 
+function rewriteCustomDomainHome(request: Request): Request {
+  const url = new URL(request.url);
+  const destination = customDomainHomePaths[url.hostname];
+
+  if (url.pathname !== "/" || !destination) return request;
+
+  url.pathname = destination;
+  return new Request(url, request);
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const handler = await getServerEntry();
-      const response = await handler.fetch(request, env, ctx);
+      const response = await handler.fetch(rewriteCustomDomainHome(request), env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
     } catch (error) {
       console.error(error);
