@@ -50,21 +50,24 @@ function isH3SwallowedErrorBody(body: string): boolean {
   }
 }
 
-function rewriteCustomDomainHome(request: Request): Request {
+function redirectCustomDomainHome(request: Request): Response | undefined {
   const url = new URL(request.url);
   const destination = customDomainHomePaths[url.hostname];
 
-  if (url.pathname !== "/" || !destination) return request;
+  if (url.pathname !== "/" || !destination) return undefined;
 
   url.pathname = destination;
-  return new Request(url, request);
+  return Response.redirect(url, 307);
 }
 
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      const domainRedirect = redirectCustomDomainHome(request);
+      if (domainRedirect) return domainRedirect;
+
       const handler = await getServerEntry();
-      const response = await handler.fetch(rewriteCustomDomainHome(request), env, ctx);
+      const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
     } catch (error) {
       console.error(error);
