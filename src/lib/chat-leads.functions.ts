@@ -142,3 +142,49 @@ export const createFeedbackServerFn = createServerFn({ method: "POST" })
     }
     return { success: true };
   });
+
+const customerSignupSchema = z.object({
+  nome: z.string().trim().min(2, "Nome é obrigatório").max(120),
+  whatsapp: z
+    .string()
+    .transform((value) => value.replace(/\D/g, ""))
+    .pipe(z.string().min(10, "WhatsApp inválido").max(13, "WhatsApp inválido")),
+  origem: z.enum(["fidelity", "delivery", "products"]),
+  loja: z.enum(["flamboyant", "buriti", "principal"]).optional(),
+});
+
+const SIGNUP_INTEREST = {
+  fidelity: "Cartão fidelidade",
+  delivery: "Promoções do iFood",
+  products: "Catálogo de produtos",
+} as const;
+
+// Cadastro do cliente na trilha "Sou cliente" (fidelidade, iFood, produtos).
+// Vira lead "cliente" no quadro, com a origem como interesse.
+export const createCustomerSignupServerFn = createServerFn({ method: "POST" })
+  .validator((data) => customerSignupSchema.parse(data))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const row = {
+      tipo: "cliente",
+      status: "novo",
+      nome: data.nome,
+      whatsapp: data.whatsapp,
+      interesse_nutri: [SIGNUP_INTEREST[data.origem]],
+      utm_source: `cliente_${data.origem}`,
+    };
+    let result = await supabaseAdmin
+      .from("leads_onboarding")
+      .insert({ ...row, loja: data.loja ?? "principal" } as never)
+      .select("id")
+      .single();
+    // Sem a coluna loja: grava sem ela para não perder o lead.
+    if (result.error && ["42703", "PGRST204"].includes(result.error.code ?? "")) {
+      result = await supabaseAdmin.from("leads_onboarding").insert(row as never).select("id").single();
+    }
+    if (result.error) {
+      console.error("Erro ao cadastrar cliente:", result.error);
+      throw new Error("Não foi possível concluir o cadastro.");
+    }
+    return { ok: true };
+  });

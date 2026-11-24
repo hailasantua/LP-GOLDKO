@@ -14,6 +14,8 @@ import type { CustomerMenuLabels } from "@/lib/site-content";
 import { GoldkoSheet, SheetHeader, Stamp, optionRowClass, primaryButtonClass } from "@/components/goldko-sheet";
 import { trackEvent, currentStore, storeWhatsAppUrl, storeIfoodUrl } from "@/lib/tracking";
 import { createFeedbackServerFn } from "@/lib/chat-leads.functions";
+import { CustomerSignup, SIGNUP_COPY, savedCustomerName, type SignupKind } from "@/components/customer-signup";
+import { FIDELITY } from "@/components/program-info-modal";
 
 type CustomerAction = {
   key: keyof CustomerMenuLabels;
@@ -50,6 +52,7 @@ type CustomerMenuModalProps = {
 
 export function CustomerMenuModal({ open, onClose, trackingSource = "help_card", labels, isEditable = false, onEditField, onOpenFidelity }: CustomerMenuModalProps) {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [signup, setSignup] = useState<SignupKind | null>(null);
   const [notice, setNotice] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -64,6 +67,7 @@ export function CustomerMenuModal({ open, onClose, trackingSource = "help_card",
   useEffect(() => {
     if (!open) return;
     selectedRef.current = false;
+    setSignup(null);
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const closeOnEscape = (event: KeyboardEvent) => {
@@ -83,6 +87,31 @@ export function CustomerMenuModal({ open, onClose, trackingSource = "help_card",
     window.open(`${storeWhatsAppUrl()}${suffix}`, "_blank", "noopener,noreferrer");
   }
 
+  // Destino final de cada opção com cadastro (depois de cadastrar ou ao pular).
+  function goTo(kind: SignupKind, skipped = false) {
+    const option = kind === "fidelity" ? "fidelity" : kind === "delivery" ? "delivery" : "products";
+    trackEvent("funnel_completed", { source: trackingSource, segment: "cliente", option, signup: !skipped });
+    if (kind === "fidelity") {
+      window.open(FIDELITY, "_blank", "noopener,noreferrer");
+      return;
+    }
+    if (kind === "delivery") {
+      window.open(storeIfoodUrl(), "_blank", "noopener,noreferrer");
+      return;
+    }
+    window.open("/documentos/catalogo-produtos-goldko.pdf", "_blank", "noopener,noreferrer");
+  }
+
+  // Quem ainda não se cadastrou vê o cadastro antes do destino.
+  function withSignup(kind: SignupKind, fallback: () => void) {
+    if (savedCustomerName() === null) {
+      trackEvent("customer_signup_view", { source: trackingSource, segment: "cliente", option: kind });
+      setSignup(kind);
+      return;
+    }
+    fallback();
+  }
+
   function handleAction(item: CustomerAction, label: string) {
     setNotice("");
     selectedRef.current = true;
@@ -92,13 +121,14 @@ export function CustomerMenuModal({ open, onClose, trackingSource = "help_card",
       return openWhatsApp();
     }
     if (item.action === "delivery") {
-      trackEvent("funnel_completed", { source: trackingSource, segment: "cliente", option: item.key });
-      window.open(storeIfoodUrl(), "_blank", "noopener,noreferrer");
+      withSignup("delivery", () => goTo("delivery", true));
       return;
     }
     if (item.action === "fidelity") {
-      onClose();
-      onOpenFidelity();
+      withSignup("fidelity", () => {
+        onClose();
+        onOpenFidelity();
+      });
       return;
     }
     if (item.action === "feedback") {
@@ -106,8 +136,7 @@ export function CustomerMenuModal({ open, onClose, trackingSource = "help_card",
       return;
     }
     if (item.action === "catalog") {
-      trackEvent("funnel_completed", { source: trackingSource, segment: "cliente", option: item.key });
-      window.open("/documentos/catalogo-produtos-goldko.pdf", "_blank", "noopener,noreferrer");
+      withSignup("products", () => goTo("products", true));
       return;
     }
     setNotice(`${label} estará disponível em breve.`);
@@ -153,8 +182,23 @@ export function CustomerMenuModal({ open, onClose, trackingSource = "help_card",
 
   return (
     <GoldkoSheet onBackdrop={closeAsAbandoned} maxWidth="max-w-[560px]">
-        <SheetHeader eyebrow="Cliente GoldKo" title="Como posso te ajudar hoje?" onClose={closeAsAbandoned} />
+        <SheetHeader
+          eyebrow={signup ? SIGNUP_COPY[signup].eyebrow : "Cliente GoldKo"}
+          title={signup ? "Cadastro" : "Como posso te ajudar hoje?"}
+          onClose={closeAsAbandoned}
+        />
 
+        {signup ? (
+          <div className="relative overflow-y-auto px-4 pb-7 pt-3 sm:px-7 sm:pb-8">
+            <CustomerSignup
+              key={signup}
+              kind={signup}
+              trackingSource={trackingSource}
+              onSkip={() => goTo(signup, true)}
+              onNext={() => goTo(signup)}
+            />
+          </div>
+        ) : (
         <div className="relative overflow-y-auto px-4 pb-7 pt-3 sm:px-7 sm:pb-8">
           <div className="flex flex-col gap-2.5">
             {visibleActions.map((item) => {
@@ -223,6 +267,7 @@ export function CustomerMenuModal({ open, onClose, trackingSource = "help_card",
             </div>
           )}
         </div>
+        )}
 
         {feedbackOpen && (
           <div className="absolute inset-0 z-30 flex items-end bg-[#001433]/70 p-3 backdrop-blur-sm sm:items-center sm:justify-center">

@@ -6,7 +6,7 @@ import { trackEvent, LARA_WHATSAPP, storeClubeNutriUrl } from "@/lib/tracking";
 export type ProgramInfoKind = "nutri" | "empresa" | "fidelity";
 
 const WHATSAPP = LARA_WHATSAPP; // Lara (relacionamento GoldKo)
-const FIDELITY = "https://app.fidelo.com.br/getpass/eavFmj?utm_source=qr";
+export const FIDELITY = "https://app.fidelo.com.br/getpass/eavFmj?utm_source=qr";
 
 type NutriOption = {
   icon: typeof Star;
