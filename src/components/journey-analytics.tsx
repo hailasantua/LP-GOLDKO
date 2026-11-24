@@ -18,6 +18,12 @@ const uniqueVisitors = (events: AnalyticsEventRow[]) =>
 const pct = (part: number, total: number) => (total ? Math.round((part / total) * 100) : 0);
 const fmt = new Intl.NumberFormat("pt-BR");
 
+const HERO_SEGMENTS = [
+  { key: "cliente", label: "Cliente", color: "bg-[#42C8E5]" },
+  { key: "empresa", label: "Empresa", color: "bg-[#00205C]" },
+  { key: "clube_nutri", label: "Clube Nutri", color: "bg-[#ff8515]" },
+] as const;
+
 const CUSTOMER_OPTIONS = [
   ["store", "Falar com a loja", true],
   ["delivery", "Pedidos e entregas", true],
@@ -40,12 +46,17 @@ function summarize(events: AnalyticsEventRow[], leads: JourneyLeadRow[]) {
   const heroOpenEvents = named("hero_cta_click");
   const heroOpeners = new Set(heroOpenEvents.map((event) => event.visitor_id));
   const heroOpened = heroOpeners.size;
-  const heroChose = uniqueVisitors(
-    named("segment_selected").filter((event) => heroOpeners.has(event.visitor_id)),
+  const heroChoseEvents = named("segment_selected").filter((event) =>
+    heroOpeners.has(event.visitor_id),
   );
-  const heroDone = uniqueVisitors(
-    named("funnel_completed").filter((event) => event.source === "hero"),
-  );
+  const heroDoneEvents = named("funnel_completed").filter((event) => event.source === "hero");
+  const heroChose = uniqueVisitors(heroChoseEvents);
+  const heroDone = uniqueVisitors(heroDoneEvents);
+  const heroBySegment = HERO_SEGMENTS.map((segment) => ({
+    ...segment,
+    chose: uniqueVisitors(heroChoseEvents.filter((event) => event.segment === segment.key)),
+    done: uniqueVisitors(heroDoneEvents.filter((event) => event.segment === segment.key)),
+  }));
   const heroAbandoned = uniqueVisitors(
     named("chat_abandoned").filter((event) => event.source === "hero"),
   );
@@ -87,10 +98,8 @@ function summarize(events: AnalyticsEventRow[], leads: JourneyLeadRow[]) {
     },
   ];
 
-  const customerEvents = fromCard("cliente");
-  const optionClicks = customerEvents.filter(
-    (event) => event.event_name === "customer_option_click",
-  );
+  // Cliente vindo do chat da Hero ou dos cards do site.
+  const optionClicks = named("customer_option_click");
   const destinations = CUSTOMER_OPTIONS.map(([key, label, active]) => ({
     key,
     label,
@@ -103,7 +112,13 @@ function summarize(events: AnalyticsEventRow[], leads: JourneyLeadRow[]) {
     chatOpened,
     leads: leads.length,
     conversion: visitors ? (leads.length / visitors) * 100 : null,
-    hero: { opened: heroOpened, chose: heroChose, done: heroDone, abandoned: heroAbandoned },
+    hero: {
+      opened: heroOpened,
+      chose: heroChose,
+      done: heroDone,
+      abandoned: heroAbandoned,
+      bySegment: heroBySegment,
+    },
     cards,
     destinations,
   };
@@ -273,8 +288,8 @@ export function JourneyAnalytics({ onOpenLeads }: { onOpenLeads?: () => void }) 
 
   const heroSteps = [
     { label: "Abriram o chat", value: current.hero.opened },
-    { label: "Escolheram o perfil", value: current.hero.chose },
-    { label: "Concluíram", value: current.hero.done },
+    { label: "Escolheram o perfil", value: current.hero.chose, split: "chose" as const },
+    { label: "Concluíram", value: current.hero.done, split: "done" as const },
   ];
   const biggestLoss = (() => {
     const drops = [
@@ -472,6 +487,7 @@ export function JourneyAnalytics({ onOpenLeads }: { onOpenLeads?: () => void }) 
               <ol className="space-y-3.5">
                 {heroSteps.map((step, index) => {
                   const width = pct(step.value, Math.max(1, current.hero.opened));
+                  const split = "split" in step ? step.split : null;
                   return (
                     <li key={step.label}>
                       <div className="mb-1.5 flex items-baseline justify-between text-sm">
@@ -495,6 +511,21 @@ export function JourneyAnalytics({ onOpenLeads }: { onOpenLeads?: () => void }) 
                           style={{ width: `${step.value ? Math.max(width, 2) : 0}%` }}
                         />
                       </div>
+                      {split && step.value > 0 && (
+                        <p className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500">
+                          {current.hero.bySegment
+                            .filter((segment) => segment[split] > 0)
+                            .map((segment) => (
+                              <span key={segment.key} className="inline-flex items-center gap-1.5">
+                                <span className={`size-2 rounded-full ${segment.color}`} />
+                                {segment.label}
+                                <span className="font-semibold tabular-nums text-[#00205C]">
+                                  {segment[split]}
+                                </span>
+                              </span>
+                            ))}
+                        </p>
+                      )}
                     </li>
                   );
                 })}
